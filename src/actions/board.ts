@@ -22,6 +22,14 @@ export async function moveApplication(input: unknown): Promise<ActionResult> {
   let { position } = parsed.data;
   const { id, stage } = parsed.data;
 
+  const current = await prisma.application.findFirst({
+    where: { id, userId: user.id },
+  });
+
+  if (!current) {
+    return { success: false, error: "Application not found" };
+  }
+
   if (position === undefined) {
     const last = await prisma.application.findFirst({
       where: { userId: user.id, stage },
@@ -30,14 +38,20 @@ export async function moveApplication(input: unknown): Promise<ActionResult> {
     position = (last?.position ?? 0) + 1;
   }
 
-  const result = await prisma.application.updateMany({
-    where: { id, userId: user.id },
-    data: { stage, position },
-  });
+  const stageChanged = current.stage !== stage;
 
-  if (result.count === 0) {
-    return { success: false, error: "Application not found" };
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.application.update({
+      where: { id },
+      data: { stage, position },
+    });
+
+    if (stageChanged) {
+      await tx.stageTransition.create({
+        data: { applicationId: id, fromStage: current.stage, toStage: stage },
+      });
+    }
+  });
 
   revalidatePath("/board");
   return { success: true };

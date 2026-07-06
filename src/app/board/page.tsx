@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { signOut } from "@/lib/auth";
@@ -23,16 +24,23 @@ export default async function BoardPage() {
           </div>
           <p className="text-sm text-ink-dim">Signed in as {user.email ?? user.name}</p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/sign-in" });
-          }}
-        >
-          <Button type="submit" variant="ghost" size="sm">
-            Sign out
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <Link href="/stats">
+            <Button type="button" variant="secondary" size="sm">
+              Stats
+            </Button>
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/sign-in" });
+            }}
+          >
+            <Button type="submit" variant="ghost" size="sm">
+              Sign out
+            </Button>
+          </form>
+        </div>
       </header>
 
       <KanbanBoard applications={applications} />

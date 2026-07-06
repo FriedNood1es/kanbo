@@ -64,12 +64,12 @@ enum ApplicationStage {
 }
 
 model Application {
-  id        String           @id @default(cuid())
-  userId    String
-  company   String
-  role      String
-  jobUrl    String?
-  notes     String?          @db.Text
+  id         String           @id @default(cuid())
+  userId     String
+  company    String
+  role       String
+  jobUrl     String?
+  notes      String?          @db.Text
   stage      ApplicationStage @default(APPLIED)
   position   Float            @default(0)
   appliedAt  DateTime         @default(now())
@@ -77,7 +77,23 @@ model Application {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transitions StageTransition[]
 
   @@index([userId, stage])
+}
+
+// One row per stage change, oldest first — the funnel/conversion stats page
+// needs actual transition timestamps, not just an application's current
+// stage, to compute real conversion rates and time-in-stage.
+model StageTransition {
+  id            String            @id @default(cuid())
+  applicationId String
+  fromStage     ApplicationStage?
+  toStage       ApplicationStage
+  createdAt     DateTime          @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
 }

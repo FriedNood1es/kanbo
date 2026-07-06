@@ -19,11 +19,20 @@ export async function createApplication(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await prisma.application.create({
-    data: {
-      ...parsed.data,
-      userId: user.id,
-    },
+  await prisma.$transaction(async (tx) => {
+    const application = await tx.application.create({
+      data: {
+        ...parsed.data,
+        userId: user.id,
+      },
+    });
+
+    // Seeds the stage-history log the funnel stats page reads from — every
+    // application needs at least this one row, or it never shows up in any
+    // conversion-rate math.
+    await tx.stageTransition.create({
+      data: { applicationId: application.id, fromStage: null, toStage: application.stage },
+    });
   });
 
   revalidatePath("/board");

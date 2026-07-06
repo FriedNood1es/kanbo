@@ -133,7 +133,7 @@ export default function KanbanBoard({ applications: initial }: { applications: A
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search company or role…"
-            className="w-full rounded-md border border-line bg-ground px-3 py-1.5 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+            className="w-full rounded-md border border-line bg-card px-3 py-1.5 text-sm text-ink shadow-sm placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
           {query && (
             <button
