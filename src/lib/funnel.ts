@@ -41,14 +41,22 @@ export function computeFunnelStats(
     const interviewingAt = sorted.find((t) => t.toStage === "INTERVIEWING")?.createdAt;
     const offerAt = sorted.find((t) => t.toStage === "OFFER")?.createdAt;
 
-    if (interviewingAt) {
+    // Funnel progress is monotonic: reaching Offer means the application
+    // reached Interviewing too, even when it was dragged straight from
+    // Applied to Offer and so has no INTERVIEWING transition row. Counting
+    // the two independently let reachedOffer exceed reachedInterviewing,
+    // which pushed the offer conversion rate past 100% (e.g. "2 of 1").
+    const reachedOfferHere = offerAt !== undefined;
+    const reachedInterviewingHere = interviewingAt !== undefined || reachedOfferHere;
+
+    if (reachedInterviewingHere) {
       reachedInterviewing++;
-      if (appliedAt) {
+      if (interviewingAt && appliedAt) {
         daysToInterview.push((interviewingAt.getTime() - appliedAt.getTime()) / 86_400_000);
       }
     }
 
-    if (offerAt) {
+    if (reachedOfferHere) {
       reachedOffer++;
       if (interviewingAt) {
         daysToOffer.push((offerAt.getTime() - interviewingAt.getTime()) / 86_400_000);
