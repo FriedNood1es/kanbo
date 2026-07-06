@@ -124,6 +124,7 @@ export default function ApplicationForm({
             <input
               name="appliedAt"
               type="date"
+              max={today}
               defaultValue={isEditing ? toDateInputValue(application?.appliedAt) : today}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />

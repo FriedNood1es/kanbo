@@ -90,9 +90,22 @@ describe("applicationInputSchema", () => {
     });
   });
 
-  it("coerces appliedAt to a Date", () => {
-    const r = applicationInputSchema.safeParse({ ...base, appliedAt: "2026-01-15" });
-    expect(r.success && r.data.appliedAt instanceof Date).toBe(true);
+  describe("appliedAt", () => {
+    it("coerces a past date to a Date", () => {
+      const r = applicationInputSchema.safeParse({ ...base, appliedAt: "2026-01-15" });
+      expect(r.success && r.data.appliedAt instanceof Date).toBe(true);
+    });
+
+    it("accepts today", () => {
+      const todayUtc = new Date().toISOString().slice(0, 10);
+      expect(applicationInputSchema.safeParse({ ...base, appliedAt: todayUtc }).success).toBe(true);
+    });
+
+    it("rejects a future date", () => {
+      const r = applicationInputSchema.safeParse({ ...base, appliedAt: "2999-01-01" });
+      expect(r.success).toBe(false);
+      if (!r.success) expect(r.error.issues[0].message).toMatch(/future/i);
+    });
   });
 });
 

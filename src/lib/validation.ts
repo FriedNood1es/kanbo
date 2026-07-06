@@ -41,6 +41,9 @@ export const applicationInputSchema = z.object({
     .refine((value) => value === null || !isNaN(value.getTime()), {
       message: "Enter a valid follow-up date",
     }),
+}).refine((data) => data.appliedAt === undefined || data.appliedAt <= startOfTomorrowUtc(), {
+  path: ["appliedAt"],
+  message: "Applied date can't be in the future",
 });
 
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
@@ -48,6 +51,16 @@ export type ApplicationInput = z.infer<typeof applicationInputSchema>;
 function startOfTodayUtc(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+// One day past start-of-today (UTC), used as an inclusive upper bound so the
+// check never falsely rejects a user whose local "today" is a day ahead of
+// UTC — the client's `max` on the date input does the exact local-time
+// enforcement; this is only a backstop against clearly-future dates.
+function startOfTomorrowUtc(): Date {
+  const t = startOfTodayUtc();
+  t.setUTCDate(t.getUTCDate() + 1);
+  return t;
 }
 
 // Creating an application: a follow-up reminder can't be scheduled in the
