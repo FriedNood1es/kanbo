@@ -113,10 +113,15 @@ export default function KanbanBoard({
   // it optimistically — but that means it also has to resync whenever the
   // server sends fresh data (e.g. after adding or editing an application,
   // whose actions do trigger a revalidated refetch), or the local copy just
-  // goes stale. Guarded to skip replacing state with data that's already
-  // identical to what's shown: swapping in a fresh array (new object
-  // identities for every card, even unchanged ones) can needlessly remount
-  // cards mid-animation elsewhere on the board.
+  // goes stale. Implemented with React's "adjust state during render" pattern
+  // (compare the incoming `initial` prop to the previous one) rather than an
+  // effect, so the reconciliation lands in the same render that receives the
+  // new data instead of a frame later.
+  //
+  // Guarded to skip replacing state with data that's already identical to
+  // what's shown: swapping in a fresh array (new object identities for every
+  // card, even unchanged ones) can needlessly remount cards mid-animation
+  // elsewhere on the board.
   //
   // Drag-and-drop and delete deliberately do *not* trigger this path — they
   // call their Server Actions as bare, un-awaited promises rather than
@@ -126,7 +131,9 @@ export default function KanbanBoard({
   // slow (a full Server Component refetch on every single drag) and, on a
   // slower connection, opened a wider window for a `@dnd-kit/react` timing
   // issue (see the per-card key in KanbanColumn.tsx) to actually surface.
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
     setApplications((current) => {
       if (current.length !== initial.length) return initial;
       const currentById = new Map(current.map((a) => [a.id, a]));
@@ -136,7 +143,7 @@ export default function KanbanBoard({
       });
       return unchanged ? current : initial;
     });
-  }, [initial]);
+  }
 
   function columnItems(stage: Stage, excludeId?: string) {
     return applications

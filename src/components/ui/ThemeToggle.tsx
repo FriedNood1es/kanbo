@@ -16,6 +16,7 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const stored = localStorage.getItem("kanbo-theme");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is browser-only and can't be read during render/SSR, so resolving the stored theme genuinely belongs in a one-time mount effect.
     setTheme(stored === "dark" || stored === "light" ? stored : getSystemTheme());
   }, []);
 

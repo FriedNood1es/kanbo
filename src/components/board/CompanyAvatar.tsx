@@ -30,8 +30,7 @@ export default function CompanyAvatar({ company }: { company: string }) {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- dynamic external
-    // domain per company, can't be enumerated in next.config remotePatterns
+    // eslint-disable-next-line @next/next/no-img-element -- dynamic external domain per company, can't be enumerated in next.config remotePatterns
     <img
       src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
       alt=""

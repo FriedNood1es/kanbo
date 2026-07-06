@@ -35,6 +35,7 @@ export default function Walkthrough() {
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is browser-only and can't be read during render/SSR, so checking whether the walkthrough was already seen genuinely belongs in a one-time mount effect.
       setStepIndex(0);
     }
   }, []);
