@@ -10,6 +10,7 @@ import { formatShortDate, getAttentionBadge } from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
 import CompanyAvatar from "@/components/board/CompanyAvatar";
+import NoteContent from "@/components/board/NoteContent";
 
 const SHRED_STRIPS = 7;
 const SHRED_DURATION_MS = 480;
@@ -108,6 +109,12 @@ export default function ApplicationCard({
             {badge.kind === "upcoming" && `Follow up on ${formatShortDate(badge.date)}`}
             {badge.kind === "stale" && `No update in ${badge.days}d — follow up?`}
           </p>
+        )}
+
+        {application.notes && (
+          <div className="max-h-28 overflow-y-auto rounded-md bg-ground px-2 py-1.5 text-sm text-ink-dim">
+            <NoteContent text={application.notes} />
+          </div>
         )}
 
         <div className="flex items-center justify-end gap-2">

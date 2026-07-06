@@ -37,7 +37,8 @@ const demoApplications: DemoApplication[] = [
   {
     company: "Spotify",
     role: "Backend Engineer",
-    notes: "Technical interview scheduled for next week.",
+    notes:
+      "Technical interview **next week**\n- Prep system design\n- Review their tech blog\n- Send referral a thank-you",
     followUpInDays: 3,
     history: [
       { stage: "APPLIED", daysAgo: 14 },

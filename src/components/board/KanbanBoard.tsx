@@ -27,6 +27,26 @@ function computePosition(prev: number | undefined, next: number | undefined) {
   return (prev + next) / 2;
 }
 
+// Field-by-field rather than a single `updatedAt` comparison: a drag's local
+// optimistic update only patches stage/position, leaving its `updatedAt`
+// stale, so comparing timestamps would treat every post-drag server refetch
+// as "changed" and force a full-board resync (defeating the optimization
+// below). Comparing the actual editable fields catches edits made through
+// the form (company, role, jobUrl, notes, dates) without false-positiving on
+// a drag whose optimistic copy already matches on everything that changed.
+function sameApplication(a: Application, b: Application) {
+  return (
+    a.company === b.company &&
+    a.role === b.role &&
+    a.jobUrl === b.jobUrl &&
+    a.notes === b.notes &&
+    a.stage === b.stage &&
+    a.position === b.position &&
+    a.appliedAt.getTime() === b.appliedAt.getTime() &&
+    (a.followUpAt?.getTime() ?? null) === (b.followUpAt?.getTime() ?? null)
+  );
+}
+
 export default function KanbanBoard({
   applications: initial,
   query = "",
@@ -106,7 +126,7 @@ export default function KanbanBoard({
       const currentById = new Map(current.map((a) => [a.id, a]));
       const unchanged = initial.every((a) => {
         const existing = currentById.get(a.id);
-        return existing && existing.stage === a.stage && existing.position === a.position;
+        return existing && sameApplication(existing, a);
       });
       return unchanged ? current : initial;
     });

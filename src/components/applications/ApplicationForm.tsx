@@ -130,10 +130,17 @@ export default function ApplicationForm({
             Notes
             <textarea
               name="notes"
-              rows={3}
+              rows={4}
               defaultValue={application?.notes ?? ""}
+              placeholder={"- Recruiter call went well\n- Take-home due Friday\n- **Salary:** discuss range"}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
+            <p className={hintClass}>
+              Supports basic Markdown — <code className="font-mono">-</code> for bullets,{" "}
+              <code className="font-mono">1.</code> for numbered lists,{" "}
+              <code className="font-mono">**bold**</code>, and{" "}
+              <code className="font-mono">*italic*</code>.
+            </p>
           </label>
 
           {error && <p className="text-sm text-stage-rejected">{error}</p>}
