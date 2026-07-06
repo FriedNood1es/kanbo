@@ -19,10 +19,12 @@ export default function ApplicationCard({
   application,
   index,
   onDeleteRequest,
+  isNew,
 }: {
   application: Application;
   index: number;
   onDeleteRequest: (application: Application) => void;
+  isNew: boolean;
 }) {
   const { ref, handleRef, isDragging } = useSortable({
     id: application.id,
@@ -135,10 +137,14 @@ export default function ApplicationCard({
   );
 
   return (
-    // card-enter (plays once on mount) wraps a bare dnd-kit-owned element —
-    // dnd-kit fully owns *its* transform for drag positioning, so the tilt
-    // instead lives one level deeper, on a plain child it never touches.
-    <div className="card-enter">
+    // card-enter (plays once for a genuinely new card, per `isNew`) wraps a
+    // bare dnd-kit-owned element — dnd-kit fully owns *its* transform for
+    // drag positioning, so the tilt instead lives one level deeper, on a
+    // plain child it never touches. `isNew` is tracked by KanbanBoard rather
+    // than derived from this component's own mount, because moving a card to
+    // a different stage unmounts it here and remounts it under the target
+    // column — a fresh mount that must *not* replay the entrance animation.
+    <div className={isNew ? "card-enter" : undefined}>
       <div ref={ref}>
         {isShredding ? (
           <div className="relative" style={{ pointerEvents: "none" }}>
@@ -169,7 +175,7 @@ export default function ApplicationCard({
         ) : (
           <div
             style={{ transform: isDragging ? `rotate(${tilt}deg)` : undefined }}
-            className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-[transform,box-shadow,opacity] duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               needsAttention ? "border-warn/50" : "border-line"
             } ${isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"}`}
           >

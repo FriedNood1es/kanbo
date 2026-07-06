@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import type { DragEndEvent } from "@dnd-kit/react";
 import type { Application } from "@/generated/prisma";
@@ -17,6 +17,7 @@ import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
 
 const DELETE_UNDO_MS = 5000;
+const MOVE_ERROR_MS = 4000;
 
 // Fractional midpoint indexing — reordering one card only ever rewrites that
 // card's position, never its neighbors'.
@@ -58,6 +59,30 @@ export default function KanbanBoard({
   const normalizedQuery = query.trim().toLowerCase();
   const [isSeeding, startSeeding] = useTransition();
 
+  // A card moving to a different stage unmounts it from its old column's
+  // React tree and mounts a fresh instance in the new column's tree (they're
+  // separate parents — key-based reconciliation only dedupes within the same
+  // parent), which used to replay the `card-enter` mount animation on every
+  // cross-column drop. knownCardIds tracks which ids have ever been seen so
+  // the animation only fires for genuinely new cards, not remounts caused by
+  // a stage change.
+  const knownCardIds = useRef<Set<string>>(new Set());
+  const newCardIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const a of applications) {
+      // Safe despite the lint rule: this only ever adds ids further down in
+      // the effect below, so a discarded/replayed render at worst computes
+      // one extra id as "new" — it can't corrupt state, only skip an
+      // entrance animation that would otherwise have played.
+      // eslint-disable-next-line react-hooks/refs
+      if (!knownCardIds.current.has(a.id)) ids.add(a.id);
+    }
+    return ids;
+  }, [applications]);
+  useEffect(() => {
+    newCardIds.forEach((id) => knownCardIds.current.add(id));
+  }, [newCardIds]);
+
   function handleSeedDemo() {
     startSeeding(async () => {
       await seedDemoApplications();
@@ -68,6 +93,9 @@ export default function KanbanBoard({
     null,
   );
   const pendingDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const moveErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibleApplications = applications.filter((a) => a.id !== pendingDelete?.id);
 
   function requestDelete(application: Application) {
@@ -168,7 +196,14 @@ export default function KanbanBoard({
     );
 
     moveApplication({ id: activeId, stage: newStage, position: newPosition }).then((result) => {
-      if (!result.success) setApplications(previous);
+      if (result.success) return;
+      setApplications(previous);
+      if (moveErrorTimer.current) clearTimeout(moveErrorTimer.current);
+      setMoveError(`Couldn't save that move: ${result.error}`);
+      moveErrorTimer.current = setTimeout(() => {
+        setMoveError(null);
+        moveErrorTimer.current = null;
+      }, MOVE_ERROR_MS);
     });
   }
 
@@ -226,6 +261,7 @@ export default function KanbanBoard({
                   applications={columnItems(stage).filter(matchesQuery)}
                   emptyMessage={normalizedQuery ? "No matches" : "No applications yet"}
                   onDeleteRequest={requestDelete}
+                  newCardIds={newCardIds}
                 />
               ))}
             </div>
@@ -233,12 +269,14 @@ export default function KanbanBoard({
         )}
       </div>
 
-      {pendingDelete && (
+      {pendingDelete ? (
         <Toast
           message={`Deleted ${pendingDelete.company}`}
           actionLabel="Undo"
           onAction={undoDelete}
         />
+      ) : (
+        moveError && <Toast message={moveError} />
       )}
     </DragDropProvider>
   );

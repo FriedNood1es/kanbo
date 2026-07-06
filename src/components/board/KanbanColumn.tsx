@@ -10,11 +10,13 @@ export default function KanbanColumn({
   applications,
   emptyMessage = "No applications yet",
   onDeleteRequest,
+  newCardIds,
 }: {
   stage: Stage;
   applications: Application[];
   emptyMessage?: string;
   onDeleteRequest: (application: Application) => void;
+  newCardIds: Set<string>;
 }) {
   const { ref, isDropTarget } = useDroppable({
     id: stage,
@@ -53,6 +55,7 @@ export default function KanbanColumn({
             application={application}
             index={index}
             onDeleteRequest={onDeleteRequest}
+            isNew={newCardIds.has(application.id)}
           />
         ))}
       </div>
