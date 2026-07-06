@@ -134,3 +134,28 @@ body {
     animation: none;
   }
 }
+
+/* each strip is a full clipped copy of the card, showing only one vertical
+   slice (via clip-path) — the strips fall/rotate independently to read as
+   a paper shredder rather than a generic fade-out */
+@keyframes shred-fall {
+  from {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(70px) translateX(var(--shred-drift, 0px)) rotate(var(--shred-tilt, 6deg));
+    opacity: 0;
+  }
+}
+
+.shred-strip {
+  animation: shred-fall 480ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shred-strip {
+    animation: none;
+    opacity: 0;
+  }
+}
