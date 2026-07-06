@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
-import { applicationInputSchema } from "@/lib/validation";
+import { applicationInputSchema, createApplicationSchema } from "@/lib/validation";
 
 export type ActionResult =
   | { success: true }
@@ -13,7 +13,7 @@ export async function createApplication(
   input: unknown,
 ): Promise<ActionResult> {
   const user = await requireUser();
-  const parsed = applicationInputSchema.safeParse(input);
+  const parsed = createApplicationSchema.safeParse(input);
 
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

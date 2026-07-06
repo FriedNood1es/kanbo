@@ -10,6 +10,15 @@ function toDateInputValue(date: Date | null | undefined) {
   return date.toISOString().slice(0, 10);
 }
 
+// Local (not UTC) "today" so a <input type="date"> min/default lines up with
+// what the user's own date picker considers today.
+function todayInputValue() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 const fieldClass =
   "rounded-md border border-line bg-ground px-3 py-2 text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30";
 const labelClass = "label-stamp flex flex-col gap-1 text-sm text-ink-dim";
@@ -26,6 +35,13 @@ export default function ApplicationForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const isEditing = !!application;
+
+  const today = todayInputValue();
+  const existingFollowUp = toDateInputValue(application?.followUpAt);
+  // Follow-ups can't be scheduled in the past — but an application whose
+  // follow-up date has already passed still needs to be editable, so keep an
+  // existing past date selectable rather than forcing it forward.
+  const followUpMin = existingFollowUp && existingFollowUp < today ? existingFollowUp : today;
 
   function close() {
     dialogRef.current?.close();
@@ -108,7 +124,7 @@ export default function ApplicationForm({
             <input
               name="appliedAt"
               type="date"
-              defaultValue={toDateInputValue(application?.appliedAt)}
+              defaultValue={isEditing ? toDateInputValue(application?.appliedAt) : today}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
@@ -118,11 +134,13 @@ export default function ApplicationForm({
             <input
               name="followUpAt"
               type="date"
-              defaultValue={toDateInputValue(application?.followUpAt)}
+              min={followUpMin}
+              defaultValue={existingFollowUp}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
             <p className={hintClass}>
-              We&rsquo;ll flag this card if the date passes without an update.
+              Pick today or a future date — we&rsquo;ll flag this card if it passes
+              without an update.
             </p>
           </label>
 

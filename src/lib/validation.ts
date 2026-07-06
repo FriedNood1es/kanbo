@@ -45,6 +45,20 @@ export const applicationInputSchema = z.object({
 
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
 
+function startOfTodayUtc(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+// Creating an application: a follow-up reminder can't be scheduled in the
+// past. This lives on the create schema only, not the shared one — editing an
+// application whose follow-up date has since passed must still work, and the
+// overdue badge relies on those past dates continuing to exist.
+export const createApplicationSchema = applicationInputSchema.refine(
+  (data) => data.followUpAt === null || data.followUpAt >= startOfTodayUtc(),
+  { path: ["followUpAt"], message: "Follow-up date can't be in the past" },
+);
+
 export const moveApplicationSchema = z.object({
   id: z.string().min(1),
   stage: z.enum(applicationStages),

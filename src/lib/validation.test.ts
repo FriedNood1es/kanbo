@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applicationInputSchema, moveApplicationSchema } from "@/lib/validation";
+import {
+  applicationInputSchema,
+  createApplicationSchema,
+  moveApplicationSchema,
+} from "@/lib/validation";
 
 const base = { company: "Acme", role: "Engineer" };
 
@@ -89,6 +93,37 @@ describe("applicationInputSchema", () => {
   it("coerces appliedAt to a Date", () => {
     const r = applicationInputSchema.safeParse({ ...base, appliedAt: "2026-01-15" });
     expect(r.success && r.data.appliedAt instanceof Date).toBe(true);
+  });
+});
+
+describe("createApplicationSchema follow-up date", () => {
+  const todayUtc = new Date().toISOString().slice(0, 10);
+
+  it("accepts no follow-up date", () => {
+    expect(createApplicationSchema.safeParse({ ...base }).success).toBe(true);
+  });
+
+  it("accepts today's date", () => {
+    expect(createApplicationSchema.safeParse({ ...base, followUpAt: todayUtc }).success).toBe(true);
+  });
+
+  it("accepts a future date", () => {
+    expect(createApplicationSchema.safeParse({ ...base, followUpAt: "2999-01-01" }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects a past date", () => {
+    const r = createApplicationSchema.safeParse({ ...base, followUpAt: "2000-01-01" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toMatch(/past/i);
+  });
+
+  it("does not restrict editing: the base (update) schema still accepts a past date", () => {
+    // An application whose follow-up date has since passed must stay editable.
+    expect(applicationInputSchema.safeParse({ ...base, followUpAt: "2000-01-01" }).success).toBe(
+      true,
+    );
   });
 });
 
