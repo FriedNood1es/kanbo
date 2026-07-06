@@ -77,7 +77,7 @@ export default function ApplicationForm({
       <span onClick={() => dialogRef.current?.showModal()}>{trigger}</span>
       <dialog
         ref={dialogRef}
-        className="w-full max-w-md rounded-lg border border-line bg-card p-0 text-ink backdrop:bg-ink/30"
+        className="fixed inset-auto left-1/2 top-1/2 m-0 max-h-[90dvh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-line bg-card p-0 text-ink backdrop:bg-ink/30"
         onClose={() => setError(null)}
       >
         <form action={handleSubmit} className="flex flex-col gap-3 p-5">
