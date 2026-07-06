@@ -1,0 +1,11 @@
+// Deterministic string hash — used wherever a card needs a stable-but-varied
+// visual property (avatar color, tilt) derived from its own data rather than
+// randomness that would reshuffle on every render.
+export function hashString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}

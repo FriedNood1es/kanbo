@@ -2,38 +2,43 @@
 
 import { useDroppable } from "@dnd-kit/react";
 import type { Application } from "@/generated/prisma";
+import { stageMeta, type Stage } from "@/lib/stages";
 import ApplicationCard from "@/components/board/ApplicationCard";
 
 export default function KanbanColumn({
   stage,
-  title,
   applications,
 }: {
-  stage: string;
-  title: string;
+  stage: Stage;
   applications: Application[];
 }) {
   const { ref, isDropTarget } = useDroppable({
     id: stage,
     data: { stage },
   });
+  const meta = stageMeta[stage];
 
   return (
     <div
       ref={ref}
-      className={`flex min-w-64 flex-1 flex-col gap-3 rounded-lg border-2 p-3 transition-colors ${
-        isDropTarget
-          ? "border-dashed border-neutral-400 bg-neutral-200"
-          : "border-transparent bg-neutral-100"
+      className={`flex min-w-64 flex-1 flex-col gap-3 rounded-lg border-2 bg-ground-raised p-3 shadow-[inset_0_1px_3px_rgba(43,38,34,0.06)] transition-colors ${
+        isDropTarget ? "border-accent border-dashed" : "border-dashed border-line"
       }`}
     >
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold text-neutral-700">{title}</h2>
-        <span className="text-xs text-neutral-500">{applications.length}</span>
+      <div className="flex items-center gap-2 px-1">
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: meta.color }}
+          aria-hidden
+        />
+        <h2 className="label-stamp text-sm font-semibold text-ink-dim">{meta.label}</h2>
+        <span className="label-stamp ml-auto text-xs text-ink-faint">
+          {applications.length}
+        </span>
       </div>
 
       {applications.length === 0 && (
-        <p className="px-1 text-sm text-neutral-400">No applications yet</p>
+        <p className="px-1 text-sm text-ink-faint">No applications yet</p>
       )}
 
       <div className="flex flex-col gap-2">

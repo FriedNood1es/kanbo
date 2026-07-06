@@ -3,11 +3,16 @@
 import { useRef, useState, useTransition } from "react";
 import type { Application } from "@/generated/prisma";
 import { createApplication, updateApplicationDetails } from "@/actions/applications";
+import Button from "@/components/ui/Button";
 
 function toDateInputValue(date: Date | null | undefined) {
   if (!date) return "";
   return date.toISOString().slice(0, 10);
 }
+
+const fieldClass =
+  "rounded-md border border-line bg-ground px-3 py-2 text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30";
+const labelClass = "label-stamp flex flex-col gap-1 text-sm text-ink-dim";
 
 export default function ApplicationForm({
   application,
@@ -54,82 +59,74 @@ export default function ApplicationForm({
       <span onClick={() => dialogRef.current?.showModal()}>{trigger}</span>
       <dialog
         ref={dialogRef}
-        className="w-full max-w-md rounded-lg p-0 backdrop:bg-black/40"
+        className="w-full max-w-md rounded-lg border border-line bg-card p-0 text-ink backdrop:bg-ink/30"
         onClose={() => setError(null)}
       >
         <form action={handleSubmit} className="flex flex-col gap-3 p-5">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold text-ink">
             {isEditing ? "Edit application" : "Add application"}
           </h2>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className={labelClass}>
             Company
             <input
               name="company"
               required
               defaultValue={application?.company}
-              className="rounded-md border px-3 py-1.5"
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className={labelClass}>
             Role
             <input
               name="role"
               required
               defaultValue={application?.role}
-              className="rounded-md border px-3 py-1.5"
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className={labelClass}>
             Job URL
             <input
               name="jobUrl"
               type="text"
               placeholder="facebook.com/jobs/…"
               defaultValue={application?.jobUrl ?? ""}
-              className="rounded-md border px-3 py-1.5"
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className={labelClass}>
             Applied on
             <input
               name="appliedAt"
               type="date"
               defaultValue={toDateInputValue(application?.appliedAt)}
-              className="rounded-md border px-3 py-1.5"
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className={labelClass}>
             Notes
             <textarea
               name="notes"
               rows={3}
               defaultValue={application?.notes ?? ""}
-              className="rounded-md border px-3 py-1.5"
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-stage-rejected">{error}</p>}
 
           <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={close}
-              className="rounded-md border px-3 py-1.5 text-sm"
-            >
+            <Button type="button" variant="secondary" onClick={close}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" disabled={isPending}>
               {isPending ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </div>
         </form>
       </dialog>

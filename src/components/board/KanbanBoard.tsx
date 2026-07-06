@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import type { DragEndEvent } from "@dnd-kit/react";
 import type { Application } from "@/generated/prisma";
@@ -8,15 +8,8 @@ import { applicationStages } from "@/lib/validation";
 import KanbanColumn from "@/components/board/KanbanColumn";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import { moveApplication } from "@/actions/board";
-
-type Stage = (typeof applicationStages)[number];
-
-const stageLabels: Record<Stage, string> = {
-  APPLIED: "Applied",
-  INTERVIEWING: "Interviewing",
-  OFFER: "Offer",
-  REJECTED: "Rejected",
-};
+import type { Stage } from "@/lib/stages";
+import Button from "@/components/ui/Button";
 
 // Fractional midpoint indexing — reordering one card only ever rewrites that
 // card's position, never its neighbors'.
@@ -29,6 +22,14 @@ function computePosition(prev: number | undefined, next: number | undefined) {
 
 export default function KanbanBoard({ applications: initial }: { applications: Application[] }) {
   const [applications, setApplications] = useState(initial);
+
+  // KanbanBoard keeps its own copy of applications so drag-and-drop can update
+  // it optimistically — but that means it also has to resync whenever the
+  // server sends fresh data (e.g. after adding/editing/deleting an
+  // application via revalidatePath), or the local copy just goes stale.
+  useEffect(() => {
+    setApplications(initial);
+  }, [initial]);
 
   function columnItems(stage: Stage, excludeId?: string) {
     return applications
@@ -75,22 +76,13 @@ export default function KanbanBoard({ applications: initial }: { applications: A
       <div className="flex flex-col gap-4">
         <div className="flex justify-end">
           <ApplicationForm
-            trigger={
-              <button className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white">
-                Add application
-              </button>
-            }
+            trigger={<Button type="button">Add application</Button>}
           />
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2">
           {applicationStages.map((stage) => (
-            <KanbanColumn
-              key={stage}
-              stage={stage}
-              title={stageLabels[stage]}
-              applications={columnItems(stage)}
-            />
+            <KanbanColumn key={stage} stage={stage} applications={columnItems(stage)} />
           ))}
         </div>
       </div>

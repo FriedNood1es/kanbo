@@ -2,6 +2,8 @@ import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { signOut } from "@/lib/auth";
 import KanbanBoard from "@/components/board/KanbanBoard";
+import Button from "@/components/ui/Button";
+import KanboMark from "@/components/ui/KanboMark";
 
 export default async function BoardPage() {
   const user = await requireUser();
@@ -15,10 +17,11 @@ export default async function BoardPage() {
     <div className="min-h-screen p-6">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Job Tracker</h1>
-          <p className="text-sm text-neutral-500">
-            Signed in as {user.email ?? user.name}
-          </p>
+          <div className="flex items-center gap-1">
+            <KanboMark className="h-6 w-6" />
+            <h1 className="label-stamp text-xl font-semibold text-ink">Kanbo</h1>
+          </div>
+          <p className="text-sm text-ink-dim">Signed in as {user.email ?? user.name}</p>
         </div>
         <form
           action={async () => {
@@ -26,9 +29,9 @@ export default async function BoardPage() {
             await signOut({ redirectTo: "/sign-in" });
           }}
         >
-          <button type="submit" className="text-sm underline">
+          <Button type="submit" variant="ghost" size="sm">
             Sign out
-          </button>
+          </Button>
         </form>
       </header>
 
