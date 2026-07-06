@@ -59,16 +59,16 @@ describe("computeFunnelStats", () => {
     const apps = [
       transitions(["APPLIED", "2026-01-01"], ["INTERVIEWING", "2026-01-05"], ["OFFER", "2026-01-11"]),
       transitions(["APPLIED", "2026-01-01"], ["INTERVIEWING", "2026-01-07"]),
-      // dragged straight to Offer: contributes to reachedOffer but has no
-      // interviewing timestamp, so it can't contribute to either day average.
+      // dragged straight to Offer: no interviewing timestamp, but it still
+      // has an applied timestamp so it contributes to days-to-offer.
       transitions(["APPLIED", "2026-01-01"], ["OFFER", "2026-01-09"]),
     ];
 
     const stats = computeFunnelStats(apps, counts({ INTERVIEWING: 1, OFFER: 2 }));
 
-    // days to interview: (4 + 6) / 2 = 5
+    // days to interview (from applied): (4 + 6) / 2 = 5
     expect(stats.avgDaysToInterview).toBeCloseTo(5);
-    // days to offer: only the first card qualifies -> 11 - 5 = 6
-    expect(stats.avgDaysToOffer).toBeCloseTo(6);
+    // days to offer (from applied): card 1 = 11 - 1 = 10, card 3 = 9 - 1 = 8 -> 9
+    expect(stats.avgDaysToOffer).toBeCloseTo(9);
   });
 });

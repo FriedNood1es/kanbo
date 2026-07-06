@@ -58,8 +58,12 @@ export function computeFunnelStats(
 
     if (reachedOfferHere) {
       reachedOffer++;
-      if (interviewingAt) {
-        daysToOffer.push((offerAt.getTime() - interviewingAt.getTime()) / 86_400_000);
+      // Measured from Applied (not Interviewing) so it shares a baseline with
+      // avgDaysToInterview — both are "days since the application started."
+      // Using Applied also lets cards dragged straight to Offer (no
+      // interviewing timestamp) contribute.
+      if (appliedAt) {
+        daysToOffer.push((offerAt.getTime() - appliedAt.getTime()) / 86_400_000);
       }
     }
   }
