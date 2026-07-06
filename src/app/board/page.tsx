@@ -25,6 +25,11 @@ export default async function BoardPage() {
           <p className="text-sm text-ink-dim">Signed in as {user.email ?? user.name}</p>
         </div>
         <div className="flex items-center gap-2">
+          <a href="/api/export">
+            <Button type="button" variant="secondary" size="sm">
+              Export CSV
+            </Button>
+          </a>
           <Link href="/stats">
             <Button type="button" variant="secondary" size="sm">
               Stats
