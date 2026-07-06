@@ -1,10 +1,14 @@
 import { signIn } from "@/lib/auth";
 import Button from "@/components/ui/Button";
 import KanboMark from "@/components/ui/KanboMark";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function SignInPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center gap-8 p-6">
+      <div className="absolute right-5 top-5">
+        <ThemeToggle />
+      </div>
       <div className="flex flex-col items-center gap-2">
         <span className="label-stamp text-sm text-ink-faint">Applied · Interviewing · Offer</span>
         <div className="flex items-center gap-1">

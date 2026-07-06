@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
+import { signOut } from "@/lib/auth";
 import { computeFunnelStats } from "@/lib/funnel";
 import { applicationStages, type Stage } from "@/lib/stages";
 import StatTile from "@/components/stats/StatTile";
 import FunnelChart from "@/components/stats/FunnelChart";
 import Button from "@/components/ui/Button";
 import KanboMark from "@/components/ui/KanboMark";
+import AccountMenu from "@/components/board/AccountMenu";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 function formatPercent(value: number | null): string {
   return value === null ? "—" : `${Math.round(value * 100)}%`;
@@ -33,21 +36,34 @@ export default async function StatsPage() {
 
   const stats = computeFunnelStats(applications, stageCounts);
 
+  async function handleSignOut() {
+    "use server";
+    await signOut({ redirectTo: "/sign-in" });
+  }
+
   return (
-    <div className="min-h-screen p-6">
-      <header className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <KanboMark className="h-6 w-6" />
-          <h1 className="label-stamp text-xl font-semibold text-ink">Stats</h1>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-card px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <KanboMark className="h-8 w-8" />
+          <span className="label-stamp text-xl font-semibold text-ink">Stats</span>
         </div>
-        <Link href="/board">
-          <Button type="button" variant="secondary" size="sm">
-            ← Back to board
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <Link href="/board">
+            <Button type="button" variant="secondary">
+              ← Back to board
+            </Button>
+          </Link>
+          <ThemeToggle />
+          <AccountMenu
+            image={user.image}
+            label={user.email ?? user.name ?? "Account"}
+            onSignOut={handleSignOut}
+          />
+        </div>
       </header>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8 p-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatTile label="Total applications" value={String(stats.total)} />
           <StatTile

@@ -1,7 +1,66 @@
 @import "tailwindcss";
 
-/* ————— Kanbo: a warm paper board, index cards, stamped labels ————— */
+/* ————— Kanbo: a warm paper board, index cards, stamped labels —————
+   Dark mode is a deliberate second pass, not an inversion: same warm paper
+   world at night (dark walnut desk / aged journal under lamp light), not a
+   generic cold-grey dev-tool dark mode. */
 :root {
+  --ground: #f4efe6;
+  --ground-raised: #ece5d8;
+  --card: #fffdf8;
+  --ink: #2b2622;
+  --ink-dim: #756b5f;
+  --ink-faint: #a89e8f;
+  --line: #ddd3c1;
+  --accent: #e8623d;
+  --accent-ink: #fffdf8;
+  --warn: #ad6a1e;
+
+  --stage-applied: #4c8fa6;
+  --stage-interviewing: #d9a441;
+  --stage-offer: #4c9a6a;
+  --stage-rejected: #b5786f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #211c17;
+    --ground-raised: #2a241d;
+    --card: #302921;
+    --ink: #f0e9dd;
+    --ink-dim: #b3a99b;
+    --ink-faint: #7a7166;
+    --line: #453c30;
+    --accent: #ff8a67;
+    --accent-ink: #2b2622;
+    --warn: #e8a24a;
+
+    --stage-applied: #74b6d1;
+    --stage-interviewing: #f0c065;
+    --stage-offer: #74c496;
+    --stage-rejected: #dd9d92;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #211c17;
+  --ground-raised: #2a241d;
+  --card: #302921;
+  --ink: #f0e9dd;
+  --ink-dim: #b3a99b;
+  --ink-faint: #7a7166;
+  --line: #453c30;
+  --accent: #ff8a67;
+  --accent-ink: #2b2622;
+  --warn: #e8a24a;
+
+  --stage-applied: #74b6d1;
+  --stage-interviewing: #f0c065;
+  --stage-offer: #74c496;
+  --stage-rejected: #dd9d92;
+}
+
+:root[data-theme="light"] {
   --ground: #f4efe6;
   --ground-raised: #ece5d8;
   --card: #fffdf8;

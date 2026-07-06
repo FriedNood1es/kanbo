@@ -25,9 +25,14 @@ function computePosition(prev: number | undefined, next: number | undefined) {
   return (prev + next) / 2;
 }
 
-export default function KanbanBoard({ applications: initial }: { applications: Application[] }) {
+export default function KanbanBoard({
+  applications: initial,
+  query = "",
+}: {
+  applications: Application[];
+  query?: string;
+}) {
   const [applications, setApplications] = useState(initial);
-  const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
 
   const [pendingDelete, setPendingDelete] = useState<{ id: string; company: string } | null>(
@@ -125,26 +130,6 @@ export default function KanbanBoard({ applications: initial }: { applications: A
           <ApplicationForm
             trigger={<Button type="button">Add application</Button>}
           />
-        </div>
-
-        <div className="relative max-w-xs">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search company or role…"
-            className="w-full rounded-md border border-line bg-card px-3 py-1.5 text-sm text-ink shadow-sm placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
-            >
-              ×
-            </button>
-          )}
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2">
