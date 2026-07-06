@@ -15,6 +15,7 @@
   --accent: #e8623d;
   --accent-ink: #fffdf8;
   --warn: #ad6a1e;
+  --danger: #c0392b;
 
   --stage-applied: #4c8fa6;
   --stage-interviewing: #d9a441;
@@ -34,6 +35,7 @@
     --accent: #ff8a67;
     --accent-ink: #2b2622;
     --warn: #e8a24a;
+  --danger: #e8685a;
 
     --stage-applied: #74b6d1;
     --stage-interviewing: #f0c065;
@@ -53,6 +55,7 @@
   --accent: #ff8a67;
   --accent-ink: #2b2622;
   --warn: #e8a24a;
+  --danger: #e8685a;
 
   --stage-applied: #74b6d1;
   --stage-interviewing: #f0c065;
@@ -71,6 +74,7 @@
   --accent: #e8623d;
   --accent-ink: #fffdf8;
   --warn: #ad6a1e;
+  --danger: #c0392b;
 
   --stage-applied: #4c8fa6;
   --stage-interviewing: #d9a441;
@@ -89,6 +93,7 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-warn: var(--warn);
+  --color-danger: var(--danger);
   --color-stage-applied: var(--stage-applied);
   --color-stage-interviewing: var(--stage-interviewing);
   --color-stage-offer: var(--stage-offer);

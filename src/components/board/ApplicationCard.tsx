@@ -102,13 +102,14 @@ export default function ApplicationCard({
         {badge && (
           <p
             className={`label-stamp flex items-center gap-1.5 text-xs ${
-              needsAttention ? "text-warn" : "text-ink-dim"
+              needsAttention ? "font-semibold text-danger" : "text-ink-dim"
             }`}
           >
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${needsAttention ? "bg-warn" : "bg-ink-faint"}`}
-              aria-hidden
-            />
+            {needsAttention ? (
+              <span aria-hidden>🚩</span>
+            ) : (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-faint" aria-hidden />
+            )}
             {badge.kind === "overdue" && `Follow-up was due ${formatShortDate(badge.date)}`}
             {badge.kind === "upcoming" && `Follow up on ${formatShortDate(badge.date)}`}
             {badge.kind === "stale" && `No update in ${badge.days}d — follow up?`}
@@ -176,7 +177,7 @@ export default function ApplicationCard({
                   key={i}
                   className={`shred-strip flex overflow-hidden rounded-md border bg-card shadow-sm ${
                     i === 0 ? "" : "absolute inset-0"
-                  } ${needsAttention ? "border-warn/50" : "border-line"}`}
+                  } ${needsAttention ? "border-danger/50" : "border-line"}`}
                   style={
                     {
                       clipPath: `inset(0 ${rightPct}% 0 ${leftPct}%)`,
@@ -195,7 +196,7 @@ export default function ApplicationCard({
           <div
             style={{ transform: isDragging ? `rotate(${tilt}deg)` : undefined }}
             className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-[transform,box-shadow,opacity] duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-              needsAttention ? "border-warn/50" : "border-line"
+              needsAttention ? "border-danger/50" : "border-line"
             } ${isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"}`}
           >
             {cardContent}
