@@ -4,6 +4,8 @@ A Kanban-style job-application tracker. Applications move across **Applied →
 Interviewing → Offer → Rejected** columns by drag-and-drop, and a stats page
 turns their stage history into a conversion funnel.
 
+**Live:** [kanbo-two.vercel.app](https://kanbo-two.vercel.app)
+
 Built as a portfolio project to exercise a modern full-stack Next.js setup:
 Server Actions for mutations, Auth.js v5 with database sessions, Prisma 7 on
 serverless Postgres, and an optimistic drag-and-drop board.
@@ -123,6 +125,7 @@ npm test
 
 ## Deployment
 
-Deployed on Vercel. Note that `prisma migrate deploy` is **not** wired into the
-build command — a schema change needs a manual `npm run db:deploy` against the
-production database before (or alongside) the code deploy.
+Deployed on Vercel at [kanbo-two.vercel.app](https://kanbo-two.vercel.app).
+Note that `prisma migrate deploy` is **not** wired into the build command — a
+schema change needs a manual `npm run db:deploy` against the production database
+before (or alongside) the code deploy.
