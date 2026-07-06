@@ -5,6 +5,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import type { DragEndEvent } from "@dnd-kit/react";
 import type { Application } from "@/generated/prisma";
 import { applicationStages } from "@/lib/validation";
+import { computePosition } from "@/lib/position";
 import KanbanColumn from "@/components/board/KanbanColumn";
 import BoardStats from "@/components/board/BoardStats";
 import ApplicationForm from "@/components/applications/ApplicationForm";
@@ -17,15 +18,6 @@ import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
 
 const MOVE_ERROR_MS = 4000;
-
-// Fractional midpoint indexing — reordering one card only ever rewrites that
-// card's position, never its neighbors'.
-function computePosition(prev: number | undefined, next: number | undefined) {
-  if (prev === undefined && next === undefined) return 0;
-  if (prev === undefined) return next! - 1;
-  if (next === undefined) return prev + 1;
-  return (prev + next) / 2;
-}
 
 // Field-by-field rather than a single `updatedAt` comparison: a drag's local
 // optimistic update only patches stage/position, leaving its `updatedAt`
