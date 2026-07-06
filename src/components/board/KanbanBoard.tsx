@@ -37,6 +37,12 @@ export default function KanbanBoard({
   const [applications, setApplications] = useState(initial);
   const normalizedQuery = query.trim().toLowerCase();
   const [isSeeding, startSeeding] = useTransition();
+  // moveApplication/deleteApplication both call revalidatePath server-side,
+  // but that only actually refreshes this page's props if the call happens
+  // inside a transition — called as a bare promise, the server data changes
+  // but the client never re-syncs, so local optimistic state (and any bug
+  // in it) is what you're stuck looking at until a manual reload.
+  const [, startBoardTransition] = useTransition();
 
   function handleSeedDemo() {
     startSeeding(async () => {
@@ -55,11 +61,15 @@ export default function KanbanBoard({
     // two undo windows overlap.
     if (pendingDelete && pendingDeleteTimer.current) {
       clearTimeout(pendingDeleteTimer.current);
-      deleteApplication(pendingDelete.id);
+      startBoardTransition(async () => {
+        await deleteApplication(pendingDelete.id);
+      });
     }
 
     pendingDeleteTimer.current = setTimeout(() => {
-      deleteApplication(application.id);
+      startBoardTransition(async () => {
+        await deleteApplication(application.id);
+      });
       setPendingDelete(null);
       pendingDeleteTimer.current = null;
     }, DELETE_UNDO_MS);
@@ -87,8 +97,25 @@ export default function KanbanBoard({
   // it optimistically — but that means it also has to resync whenever the
   // server sends fresh data (e.g. after adding/editing/deleting an
   // application via revalidatePath), or the local copy just goes stale.
+  //
+  // The one case that has to skip this: right after a drag we've already
+  // applied the exact same move locally, and the revalidated `initial` that
+  // lands a moment later just confirms it. Swapping in a fresh array (new
+  // object identities for every item) while dnd-kit is still mid-way through
+  // its own drop/settle animation for the just-moved card causes it to
+  // register what looks like a second instance — a duplicate card that
+  // sticks around until the animation frame catches up. So: only resync when
+  // the incoming data is actually different from what we're already showing.
   useEffect(() => {
-    setApplications(initial);
+    setApplications((current) => {
+      if (current.length !== initial.length) return initial;
+      const currentById = new Map(current.map((a) => [a.id, a]));
+      const unchanged = initial.every((a) => {
+        const existing = currentById.get(a.id);
+        return existing && existing.stage === a.stage && existing.position === a.position;
+      });
+      return unchanged ? current : initial;
+    });
   }, [initial]);
 
   function columnItems(stage: Stage, excludeId?: string) {
@@ -126,7 +153,8 @@ export default function KanbanBoard({
       prev.map((a) => (a.id === activeId ? { ...a, stage: newStage, position: newPosition } : a)),
     );
 
-    moveApplication({ id: activeId, stage: newStage, position: newPosition }).then((result) => {
+    startBoardTransition(async () => {
+      const result = await moveApplication({ id: activeId, stage: newStage, position: newPosition });
       if (!result.success) setApplications(previous);
     });
   }

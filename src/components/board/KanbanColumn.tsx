@@ -48,8 +48,14 @@ export default function KanbanColumn({
 
       <div className="flex flex-col gap-2">
         {applications.map((application, index) => (
+          // Keying on stage too, not just id: @dnd-kit/react's useSortable
+          // ties its internal bookkeeping to the `group` it was given, and
+          // reusing the same hook instance across a group change (rather
+          // than remounting) was leaving a stale duplicate registered under
+          // the old group — visible as a ghost card still styled for its
+          // previous stage.
           <ApplicationCard
-            key={application.id}
+            key={`${application.id}-${application.stage}`}
             application={application}
             index={index}
             onDeleteRequest={onDeleteRequest}
