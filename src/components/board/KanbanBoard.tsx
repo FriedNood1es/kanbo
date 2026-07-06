@@ -16,7 +16,6 @@ import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
 
-const DELETE_UNDO_MS = 5000;
 const MOVE_ERROR_MS = 4000;
 
 // Fractional midpoint indexing — reordering one card only ever rewrites that
@@ -89,38 +88,17 @@ export default function KanbanBoard({
     });
   }
 
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; company: string } | null>(
-    null,
-  );
-  const pendingDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [moveError, setMoveError] = useState<string | null>(null);
   const moveErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const visibleApplications = applications.filter((a) => a.id !== pendingDelete?.id);
 
+  // Deletion is confirmed inline on the card itself (see ApplicationCard), so
+  // by the time this runs the user has already committed — drop the row from
+  // local state immediately and persist. Removing it locally (rather than
+  // waiting on the server round-trip's revalidation) keeps the card from
+  // lingering until the refetch lands.
   function requestDelete(application: Application) {
-    // Finalize any already-pending delete immediately rather than letting
-    // two undo windows overlap.
-    if (pendingDelete && pendingDeleteTimer.current) {
-      clearTimeout(pendingDeleteTimer.current);
-      deleteApplication(pendingDelete.id);
-    }
-
-    pendingDeleteTimer.current = setTimeout(() => {
-      deleteApplication(application.id);
-      setPendingDelete(null);
-      pendingDeleteTimer.current = null;
-    }, DELETE_UNDO_MS);
-
-    setPendingDelete({ id: application.id, company: application.company });
-  }
-
-  function undoDelete() {
-    if (pendingDeleteTimer.current) {
-      clearTimeout(pendingDeleteTimer.current);
-      pendingDeleteTimer.current = null;
-    }
-    setPendingDelete(null);
+    deleteApplication(application.id);
+    setApplications((prev) => prev.filter((a) => a.id !== application.id));
   }
 
   function matchesQuery(application: Application) {
@@ -161,7 +139,7 @@ export default function KanbanBoard({
   }, [initial]);
 
   function columnItems(stage: Stage, excludeId?: string) {
-    return visibleApplications
+    return applications
       .filter((a) => a.stage === stage && a.id !== excludeId)
       .sort((a, b) => a.position - b.position);
   }
@@ -175,7 +153,7 @@ export default function KanbanBoard({
     const overId = String(target.id);
     const overStage = (target.data as { stage?: Stage } | undefined)?.stage;
 
-    const active = visibleApplications.find((a) => a.id === activeId);
+    const active = applications.find((a) => a.id === activeId);
     if (!active) return;
 
     const newStage: Stage = overStage ?? active.stage;
@@ -243,7 +221,7 @@ export default function KanbanBoard({
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <BoardStats applications={visibleApplications} />
+              <BoardStats applications={applications} />
               <ApplicationForm
                 trigger={
                   <Button type="button" data-tour="add-application">
@@ -269,15 +247,7 @@ export default function KanbanBoard({
         )}
       </div>
 
-      {pendingDelete ? (
-        <Toast
-          message={`Deleted ${pendingDelete.company}`}
-          actionLabel="Undo"
-          onAction={undoDelete}
-        />
-      ) : (
-        moveError && <Toast message={moveError} />
-      )}
+      {moveError && <Toast message={moveError} />}
     </DragDropProvider>
   );
 }

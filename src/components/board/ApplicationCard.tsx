@@ -47,8 +47,10 @@ export default function ApplicationCard({
   const badge = getAttentionBadge(application);
   const needsAttention = badge?.kind === "overdue" || badge?.kind === "stale";
   const [isShredding, setIsShredding] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
-  function handleDelete() {
+  function handleConfirmDelete() {
+    setIsConfirmingDelete(false);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
       onDeleteRequest(application);
@@ -119,19 +121,36 @@ export default function ApplicationCard({
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2">
-          <ApplicationForm
-            application={application}
-            trigger={
-              <Button type="button" variant="ghost" size="sm">
-                Edit
-              </Button>
-            }
-          />
-          <Button variant="danger" size="sm" onClick={handleDelete}>
-            Delete
-          </Button>
-        </div>
+        {isConfirmingDelete ? (
+          <div className="flex items-center gap-2">
+            <span className="mr-auto text-xs text-ink-dim">Delete this card?</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsConfirmingDelete(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-2">
+            <ApplicationForm
+              application={application}
+              trigger={
+                <Button type="button" variant="ghost" size="sm">
+                  Edit
+                </Button>
+              }
+            />
+            <Button variant="danger" size="sm" onClick={() => setIsConfirmingDelete(true)}>
+              Delete
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );
