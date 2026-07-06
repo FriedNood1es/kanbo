@@ -38,6 +38,7 @@ export default function ApplicationForm({
       jobUrl: String(formData.get("jobUrl") ?? ""),
       notes: String(formData.get("notes") ?? ""),
       appliedAt: formData.get("appliedAt") ? String(formData.get("appliedAt")) : undefined,
+      followUpAt: String(formData.get("followUpAt") ?? ""),
     };
 
     startTransition(async () => {
@@ -104,6 +105,16 @@ export default function ApplicationForm({
               name="appliedAt"
               type="date"
               defaultValue={toDateInputValue(application?.appliedAt)}
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
+            />
+          </label>
+
+          <label className={labelClass}>
+            Follow up on
+            <input
+              name="followUpAt"
+              type="date"
+              defaultValue={toDateInputValue(application?.followUpAt)}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>

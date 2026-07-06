@@ -70,11 +70,12 @@ model Application {
   role      String
   jobUrl    String?
   notes     String?          @db.Text
-  stage     ApplicationStage @default(APPLIED)
-  position  Float            @default(0)
-  appliedAt DateTime         @default(now())
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  stage      ApplicationStage @default(APPLIED)
+  position   Float            @default(0)
+  appliedAt  DateTime         @default(now())
+  followUpAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

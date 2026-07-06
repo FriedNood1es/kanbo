@@ -5,7 +5,7 @@ import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
 import { avatarColor, avatarInitial } from "@/lib/avatar";
 import { cardTilt } from "@/lib/tilt";
-import { daysSince, isStale } from "@/lib/staleness";
+import { formatShortDate, getAttentionBadge } from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
 
@@ -26,7 +26,8 @@ export default function ApplicationCard({
   });
   const meta = stageMeta[application.stage];
   const tilt = cardTilt(application.id);
-  const stale = isStale(application.stage, application.updatedAt);
+  const badge = getAttentionBadge(application);
+  const needsAttention = badge?.kind === "overdue" || badge?.kind === "stale";
 
   return (
     // card-enter (plays once on mount) wraps a bare dnd-kit-owned element —
@@ -37,7 +38,7 @@ export default function ApplicationCard({
         <div
           style={{ transform: isDragging ? `rotate(${tilt}deg)` : undefined }}
           className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-            stale ? "border-warn/50" : "border-line"
+            needsAttention ? "border-warn/50" : "border-line"
           } ${isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"}`}
         >
           <span className="w-1.5 shrink-0" style={{ backgroundColor: meta.color }} aria-hidden />
@@ -82,10 +83,19 @@ export default function ApplicationCard({
               </a>
             )}
 
-            {stale && (
-              <p className="label-stamp flex items-center gap-1.5 text-xs text-warn">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn" aria-hidden />
-                No update in {daysSince(application.updatedAt)}d — follow up?
+            {badge && (
+              <p
+                className={`label-stamp flex items-center gap-1.5 text-xs ${
+                  needsAttention ? "text-warn" : "text-ink-dim"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${needsAttention ? "bg-warn" : "bg-ink-faint"}`}
+                  aria-hidden
+                />
+                {badge.kind === "overdue" && `Follow-up was due ${formatShortDate(badge.date)}`}
+                {badge.kind === "upcoming" && `Follow up on ${formatShortDate(badge.date)}`}
+                {badge.kind === "stale" && `No update in ${badge.days}d — follow up?`}
               </p>
             )}
 

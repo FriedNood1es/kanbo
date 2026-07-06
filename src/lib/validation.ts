@@ -30,6 +30,17 @@ export const applicationInputSchema = z.object({
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
   appliedAt: z.coerce.date().optional(),
+  // Explicitly nullable (not just optional) so clearing the field in the
+  // edit form actually removes an existing follow-up date rather than
+  // leaving the old one in place — Prisma treats `undefined` as "don't
+  // touch this field" but `null` as "clear it."
+  followUpAt: z
+    .string()
+    .optional()
+    .transform((value) => (value ? new Date(value) : null))
+    .refine((value) => value === null || !isNaN(value.getTime()), {
+      message: "Enter a valid follow-up date",
+    }),
 });
 
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
