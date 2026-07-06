@@ -23,12 +23,16 @@ export const applicationInputSchema = z.object({
     .refine((value) => value === undefined || z.url().safeParse(value).success, {
       message: "Enter a valid URL",
     }),
+  // Empty maps to `null`, not `undefined`, for the same reason as `followUpAt`
+  // below: clearing the notes field in the edit form must actually erase an
+  // existing note. Prisma treats `undefined` as "leave this field alone," so
+  // returning `undefined` here would silently keep the old note.
   notes: z
     .string()
     .trim()
     .max(4000)
     .optional()
-    .transform((v) => (v === "" ? undefined : v)),
+    .transform((v) => (v ? v : null)),
   appliedAt: z.coerce.date().optional(),
   // Explicitly nullable (not just optional) so clearing the field in the
   // edit form actually removes an existing follow-up date rather than

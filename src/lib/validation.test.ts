@@ -15,9 +15,9 @@ describe("applicationInputSchema", () => {
       expect(r.data.company).toBe("Acme");
       expect(r.data.role).toBe("Engineer");
       expect(r.data.jobUrl).toBeUndefined();
-      expect(r.data.notes).toBeUndefined();
-      // followUpAt transforms an absent value to null (not undefined) so the
-      // update action clears the column rather than leaving it untouched.
+      // notes and followUpAt transform an absent value to null (not undefined)
+      // so the update action clears the column rather than leaving it untouched.
+      expect(r.data.notes).toBeNull();
       expect(r.data.followUpAt).toBeNull();
     }
   });
@@ -60,9 +60,9 @@ describe("applicationInputSchema", () => {
       expect(r.success && r.data.notes).toBe("follow up");
     });
 
-    it("maps blank notes to undefined", () => {
+    it("maps blank notes to null so clearing the field erases the note", () => {
       const r = applicationInputSchema.safeParse({ ...base, notes: "   " });
-      expect(r.success && r.data.notes).toBeUndefined();
+      expect(r.success && r.data.notes).toBeNull();
     });
 
     it("rejects notes longer than 4000 chars", () => {
