@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import type { DragEndEvent } from "@dnd-kit/react";
 import type { Application } from "@/generated/prisma";
@@ -10,9 +10,11 @@ import BoardStats from "@/components/board/BoardStats";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import { moveApplication } from "@/actions/board";
 import { deleteApplication } from "@/actions/applications";
+import { seedDemoApplications } from "@/actions/demo";
 import type { Stage } from "@/lib/stages";
 import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
+import KanboMark from "@/components/ui/KanboMark";
 
 const DELETE_UNDO_MS = 5000;
 
@@ -34,6 +36,13 @@ export default function KanbanBoard({
 }) {
   const [applications, setApplications] = useState(initial);
   const normalizedQuery = query.trim().toLowerCase();
+  const [isSeeding, startSeeding] = useTransition();
+
+  function handleSeedDemo() {
+    startSeeding(async () => {
+      await seedDemoApplications();
+    });
+  }
 
   const [pendingDelete, setPendingDelete] = useState<{ id: string; company: string } | null>(
     null,
@@ -122,27 +131,65 @@ export default function KanbanBoard({
     });
   }
 
+  const isEmpty = applications.length === 0;
+
   return (
     <DragDropProvider onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <BoardStats applications={visibleApplications} />
-          <ApplicationForm
-            trigger={<Button type="button">Add application</Button>}
-          />
-        </div>
+        {isEmpty ? (
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-line bg-ground-raised px-6 py-16 text-center">
+            <KanboMark className="h-10 w-10 opacity-70" />
+            <div>
+              <h2 className="text-lg font-semibold text-ink">Your board is empty</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-ink-dim">
+                Track applications as they move from Applied to Interviewing to Offer — drag
+                cards between columns as things progress.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <ApplicationForm
+                trigger={
+                  <Button type="button" data-tour="add-application">
+                    Add your first application
+                  </Button>
+                }
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleSeedDemo}
+                disabled={isSeeding}
+              >
+                {isSeeding ? "Loading…" : "Load example cards"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <BoardStats applications={visibleApplications} />
+              <ApplicationForm
+                trigger={
+                  <Button type="button" data-tour="add-application">
+                    Add application
+                  </Button>
+                }
+              />
+            </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {applicationStages.map((stage) => (
-            <KanbanColumn
-              key={stage}
-              stage={stage}
-              applications={columnItems(stage).filter(matchesQuery)}
-              emptyMessage={normalizedQuery ? "No matches" : "No applications yet"}
-              onDeleteRequest={requestDelete}
-            />
-          ))}
-        </div>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {applicationStages.map((stage) => (
+                <KanbanColumn
+                  key={stage}
+                  stage={stage}
+                  applications={columnItems(stage).filter(matchesQuery)}
+                  emptyMessage={normalizedQuery ? "No matches" : "No applications yet"}
+                  onDeleteRequest={requestDelete}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {pendingDelete && (

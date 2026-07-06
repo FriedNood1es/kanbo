@@ -6,6 +6,8 @@ import KanbanBoard from "@/components/board/KanbanBoard";
 import KanboMark from "@/components/ui/KanboMark";
 import AccountMenu from "@/components/board/AccountMenu";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import ShortcutsHelp from "@/components/ui/ShortcutsHelp";
+import Walkthrough from "@/components/board/Walkthrough";
 
 export default function BoardShell({
   applications,
@@ -58,6 +60,7 @@ export default function BoardShell({
           </svg>
           <input
             ref={searchRef}
+            data-tour="search"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -69,6 +72,7 @@ export default function BoardShell({
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
+              title="Clear search"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-ink-faint hover:text-ink"
             >
               ×
@@ -81,6 +85,7 @@ export default function BoardShell({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
+          <ShortcutsHelp />
           <ThemeToggle />
           <AccountMenu image={userImage} label={userLabel} onSignOut={onSignOut} />
         </div>
@@ -89,6 +94,8 @@ export default function BoardShell({
       <div className="p-6">
         <KanbanBoard applications={applications} query={query} />
       </div>
+
+      <Walkthrough />
     </div>
   );
 }

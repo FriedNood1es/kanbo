@@ -25,6 +25,7 @@ export default function KanbanColumn({
   return (
     <div
       ref={ref}
+      data-tour={stage === "APPLIED" ? "column-applied" : undefined}
       className={`flex min-w-64 flex-1 flex-col gap-3 rounded-lg border-2 bg-ground-raised p-3 shadow-[inset_0_1px_3px_rgba(43,38,34,0.06)] transition-colors ${
         isDropTarget ? "border-accent border-dashed" : "border-dashed border-line"
       }`}

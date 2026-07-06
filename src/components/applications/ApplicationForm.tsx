@@ -13,6 +13,7 @@ function toDateInputValue(date: Date | null | undefined) {
 const fieldClass =
   "rounded-md border border-line bg-ground px-3 py-2 text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30";
 const labelClass = "label-stamp flex flex-col gap-1 text-sm text-ink-dim";
+const hintClass = "-mt-0.5 font-sans text-xs normal-case tracking-normal text-ink-faint";
 
 export default function ApplicationForm({
   application,
@@ -97,6 +98,9 @@ export default function ApplicationForm({
               defaultValue={application?.jobUrl ?? ""}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
+            <p className={hintClass}>
+              We&rsquo;ll try to show the company&rsquo;s logo automatically from this.
+            </p>
           </label>
 
           <label className={labelClass}>
@@ -117,6 +121,9 @@ export default function ApplicationForm({
               defaultValue={toDateInputValue(application?.followUpAt)}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
+            <p className={hintClass}>
+              We&rsquo;ll flag this card if the date passes without an update.
+            </p>
           </label>
 
           <label className={labelClass}>

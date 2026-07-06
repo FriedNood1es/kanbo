@@ -49,6 +49,7 @@ export default function ApplicationCard({
                 ref={handleRef}
                 className="-ml-1 mt-0.5 flex h-6 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-ink-faint hover:bg-ground hover:text-ink-dim active:cursor-grabbing"
                 aria-label="Drag to reorder or change stage"
+                title="Drag to reorder or change stage"
               >
                 <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
                   <circle cx="3" cy="2" r="1.5" />

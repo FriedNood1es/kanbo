@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import KanboMark from "@/components/ui/KanboMark";
 import AccountMenu from "@/components/board/AccountMenu";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import ShortcutsHelp from "@/components/ui/ShortcutsHelp";
 
 function formatPercent(value: number | null): string {
   return value === null ? "—" : `${Math.round(value * 100)}%`;
@@ -54,6 +55,7 @@ export default async function StatsPage() {
               ← Back to board
             </Button>
           </Link>
+          <ShortcutsHelp />
           <ThemeToggle />
           <AccountMenu
             image={user.image}

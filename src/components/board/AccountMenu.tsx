@@ -39,6 +39,7 @@ export default function AccountMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
+        title="Account menu"
         aria-expanded={open}
         aria-haspopup="menu"
         className="group relative flex h-10 w-10 items-center justify-center"
