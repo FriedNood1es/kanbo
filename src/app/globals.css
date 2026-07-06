@@ -11,6 +11,7 @@
   --line: #ddd3c1;
   --accent: #e8623d;
   --accent-ink: #fffdf8;
+  --warn: #ad6a1e;
 
   --stage-applied: #4c8fa6;
   --stage-interviewing: #d9a441;
@@ -28,6 +29,7 @@
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-warn: var(--warn);
   --color-stage-applied: var(--stage-applied);
   --color-stage-interviewing: var(--stage-interviewing);
   --color-stage-offer: var(--stage-offer);

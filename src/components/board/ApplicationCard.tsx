@@ -1,23 +1,23 @@
 "use client";
 
-import { useTransition } from "react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
 import { avatarColor, avatarInitial } from "@/lib/avatar";
 import { cardTilt } from "@/lib/tilt";
-import { deleteApplication } from "@/actions/applications";
+import { daysSince, isStale } from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
 
 export default function ApplicationCard({
   application,
   index,
+  onDeleteRequest,
 }: {
   application: Application;
   index: number;
+  onDeleteRequest: (application: Application) => void;
 }) {
-  const [isPending, startTransition] = useTransition();
   const { ref, handleRef, isDragging } = useSortable({
     id: application.id,
     index,
@@ -26,13 +26,7 @@ export default function ApplicationCard({
   });
   const meta = stageMeta[application.stage];
   const tilt = cardTilt(application.id);
-
-  function handleDelete() {
-    if (!confirm(`Delete the application for ${application.company}?`)) return;
-    startTransition(async () => {
-      await deleteApplication(application.id);
-    });
-  }
+  const stale = isStale(application.stage, application.updatedAt);
 
   return (
     // card-enter (plays once on mount) wraps a bare dnd-kit-owned element —
@@ -42,9 +36,9 @@ export default function ApplicationCard({
       <div ref={ref}>
         <div
           style={{ transform: isDragging ? `rotate(${tilt}deg)` : undefined }}
-          className={`flex overflow-hidden rounded-md border border-line bg-card shadow-sm transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-            isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"
-          }`}
+          className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            stale ? "border-warn/50" : "border-line"
+          } ${isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"}`}
         >
           <span className="w-1.5 shrink-0" style={{ backgroundColor: meta.color }} aria-hidden />
 
@@ -88,6 +82,13 @@ export default function ApplicationCard({
               </a>
             )}
 
+            {stale && (
+              <p className="label-stamp flex items-center gap-1.5 text-xs text-warn">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn" aria-hidden />
+                No update in {daysSince(application.updatedAt)}d — follow up?
+              </p>
+            )}
+
             <div className="flex items-center justify-end gap-2">
               <ApplicationForm
                 application={application}
@@ -97,7 +98,7 @@ export default function ApplicationCard({
                   </Button>
                 }
               />
-              <Button variant="danger" size="sm" onClick={handleDelete} disabled={isPending}>
+              <Button variant="danger" size="sm" onClick={() => onDeleteRequest(application)}>
                 Delete
               </Button>
             </div>

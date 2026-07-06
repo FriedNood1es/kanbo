@@ -8,9 +8,13 @@ import ApplicationCard from "@/components/board/ApplicationCard";
 export default function KanbanColumn({
   stage,
   applications,
+  emptyMessage = "No applications yet",
+  onDeleteRequest,
 }: {
   stage: Stage;
   applications: Application[];
+  emptyMessage?: string;
+  onDeleteRequest: (application: Application) => void;
 }) {
   const { ref, isDropTarget } = useDroppable({
     id: stage,
@@ -38,12 +42,17 @@ export default function KanbanColumn({
       </div>
 
       {applications.length === 0 && (
-        <p className="px-1 text-sm text-ink-faint">No applications yet</p>
+        <p className="px-1 text-sm text-ink-faint">{emptyMessage}</p>
       )}
 
       <div className="flex flex-col gap-2">
         {applications.map((application, index) => (
-          <ApplicationCard key={application.id} application={application} index={index} />
+          <ApplicationCard
+            key={application.id}
+            application={application}
+            index={index}
+            onDeleteRequest={onDeleteRequest}
+          />
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { applicationStages } from "@/lib/validation";
 
+export { applicationStages };
 export type Stage = (typeof applicationStages)[number];
 
 export const stageMeta: Record<Stage, { label: string; color: string }> = {
