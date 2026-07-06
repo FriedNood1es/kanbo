@@ -3,11 +3,11 @@
 import { useSortable } from "@dnd-kit/react/sortable";
 import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
-import { avatarColor, avatarInitial } from "@/lib/avatar";
 import { cardTilt } from "@/lib/tilt";
 import { formatShortDate, getAttentionBadge } from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
+import CompanyAvatar from "@/components/board/CompanyAvatar";
 
 export default function ApplicationCard({
   application,
@@ -59,13 +59,7 @@ export default function ApplicationCard({
                   <circle cx="9" cy="14" r="1.5" />
                 </svg>
               </button>
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-accent-ink"
-                style={{ backgroundColor: avatarColor(application.company) }}
-                aria-hidden
-              >
-                {avatarInitial(application.company)}
-              </span>
+              <CompanyAvatar company={application.company} />
               <div className="flex-1">
                 <p className="text-base font-semibold text-ink">{application.company}</p>
                 <p className="text-sm text-ink-dim">{application.role}</p>
