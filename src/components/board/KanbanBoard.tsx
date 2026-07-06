@@ -37,12 +37,6 @@ export default function KanbanBoard({
   const [applications, setApplications] = useState(initial);
   const normalizedQuery = query.trim().toLowerCase();
   const [isSeeding, startSeeding] = useTransition();
-  // moveApplication/deleteApplication both call revalidatePath server-side,
-  // but that only actually refreshes this page's props if the call happens
-  // inside a transition — called as a bare promise, the server data changes
-  // but the client never re-syncs, so local optimistic state (and any bug
-  // in it) is what you're stuck looking at until a manual reload.
-  const [, startBoardTransition] = useTransition();
 
   function handleSeedDemo() {
     startSeeding(async () => {
@@ -61,15 +55,11 @@ export default function KanbanBoard({
     // two undo windows overlap.
     if (pendingDelete && pendingDeleteTimer.current) {
       clearTimeout(pendingDeleteTimer.current);
-      startBoardTransition(async () => {
-        await deleteApplication(pendingDelete.id);
-      });
+      deleteApplication(pendingDelete.id);
     }
 
     pendingDeleteTimer.current = setTimeout(() => {
-      startBoardTransition(async () => {
-        await deleteApplication(application.id);
-      });
+      deleteApplication(application.id);
       setPendingDelete(null);
       pendingDeleteTimer.current = null;
     }, DELETE_UNDO_MS);
@@ -95,17 +85,21 @@ export default function KanbanBoard({
 
   // KanbanBoard keeps its own copy of applications so drag-and-drop can update
   // it optimistically — but that means it also has to resync whenever the
-  // server sends fresh data (e.g. after adding/editing/deleting an
-  // application via revalidatePath), or the local copy just goes stale.
+  // server sends fresh data (e.g. after adding or editing an application,
+  // whose actions do trigger a revalidated refetch), or the local copy just
+  // goes stale. Guarded to skip replacing state with data that's already
+  // identical to what's shown: swapping in a fresh array (new object
+  // identities for every card, even unchanged ones) can needlessly remount
+  // cards mid-animation elsewhere on the board.
   //
-  // The one case that has to skip this: right after a drag we've already
-  // applied the exact same move locally, and the revalidated `initial` that
-  // lands a moment later just confirms it. Swapping in a fresh array (new
-  // object identities for every item) while dnd-kit is still mid-way through
-  // its own drop/settle animation for the just-moved card causes it to
-  // register what looks like a second instance — a duplicate card that
-  // sticks around until the animation frame catches up. So: only resync when
-  // the incoming data is actually different from what we're already showing.
+  // Drag-and-drop and delete deliberately do *not* trigger this path — they
+  // call their Server Actions as bare, un-awaited promises rather than
+  // through a transition, purely for persistence. The optimistic local
+  // update already fully determines the correct UI state, and forcing a
+  // round-trip-gated re-render of the whole board on every drop was both
+  // slow (a full Server Component refetch on every single drag) and, on a
+  // slower connection, opened a wider window for a `@dnd-kit/react` timing
+  // issue (see the per-card key in KanbanColumn.tsx) to actually surface.
   useEffect(() => {
     setApplications((current) => {
       if (current.length !== initial.length) return initial;
@@ -153,8 +147,7 @@ export default function KanbanBoard({
       prev.map((a) => (a.id === activeId ? { ...a, stage: newStage, position: newPosition } : a)),
     );
 
-    startBoardTransition(async () => {
-      const result = await moveApplication({ id: activeId, stage: newStage, position: newPosition });
+    moveApplication({ id: activeId, stage: newStage, position: newPosition }).then((result) => {
       if (!result.success) setApplications(previous);
     });
   }

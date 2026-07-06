@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/react/sortable";
+import { SortableKeyboardPlugin } from "@dnd-kit/dom/sortable";
 import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
 import { cardTilt } from "@/lib/tilt";
@@ -27,6 +28,16 @@ export default function ApplicationCard({
     index,
     group: application.stage,
     data: { stage: application.stage },
+    // Default plugins include OptimisticSortingPlugin, which reorders the
+    // *real* DOM directly (insertAdjacentElement) as you drag over other
+    // cards, entirely outside React's reconciliation. Our onDragEnd handler
+    // then updates React state on top of a DOM React no longer has an
+    // accurate picture of — the actual cause of cards vanishing or
+    // subsequent drags silently failing. Keeping only the keyboard plugin
+    // means the board only reorders once, when React re-renders from our
+    // own state update, which is the one thing keeping DOM and state
+    // in sync.
+    plugins: [SortableKeyboardPlugin],
   });
   const meta = stageMeta[application.stage];
   const tilt = cardTilt(application.id);
