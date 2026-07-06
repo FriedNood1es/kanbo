@@ -1,7 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
+
+// useFormStatus only sees pending state from inside the <form> it belongs
+// to — a plain submit button gave zero feedback while signOut()'s redirect
+// was in flight, so a slow connection just looked like a dead click.
+function SignOutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      role="menuitem"
+      disabled={pending}
+      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stage-rejected hover:bg-ground disabled:cursor-wait disabled:opacity-60"
+    >
+      {pending && (
+        <svg
+          className="h-3 w-3 shrink-0 animate-spin"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+          <path
+            d="M14.5 8a6.5 6.5 0 0 0-6.5-6.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+      {pending ? "Signing out…" : "Sign out"}
+    </button>
+  );
+}
 
 export default function AccountMenu({
   image,
@@ -91,13 +125,7 @@ export default function AccountMenu({
           </Link>
 
           <form action={onSignOut}>
-            <button
-              type="submit"
-              role="menuitem"
-              className="block w-full px-3 py-2 text-left text-sm text-stage-rejected hover:bg-ground"
-            >
-              Sign out
-            </button>
+            <SignOutButton />
           </form>
         </div>
       )}

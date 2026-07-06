@@ -1,6 +1,6 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
-/* ————— Kanbo: a warm paper board, index cards, stamped labels —————
+/* â€”â€”â€”â€”â€” Kanbo: a warm paper board, index cards, stamped labels â€”â€”â€”â€”â€”
    Dark mode is a deliberate second pass, not an inversion: same warm paper
    world at night (dark walnut desk / aged journal under lamp light), not a
    generic cold-grey dev-tool dark mode. */
@@ -136,7 +136,7 @@ body {
 }
 
 /* each strip is a full clipped copy of the card, showing only one vertical
-   slice (via clip-path) — the strips fall/rotate independently to read as
+   slice (via clip-path) â€” the strips fall/rotate independently to read as
    a paper shredder rather than a generic fade-out */
 @keyframes shred-fall {
   from {
@@ -157,5 +157,121 @@ body {
   .shred-strip {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* sign-in page preview: a card travels Applied -> Interviewing -> Offer
+   and back, pausing at each stop â€” a small demo of the board's actual
+   drag mechanic before you've even signed in. Loop starts and ends at the
+   same position (Applied) so it seams cleanly. */
+@keyframes stage-travel {
+  0%, 8% {
+    left: 0%;
+    background-color: var(--stage-applied);
+  }
+  25%, 33% {
+    left: 50%;
+    background-color: var(--stage-interviewing);
+  }
+  50%, 58% {
+    left: 100%;
+    background-color: var(--stage-offer);
+  }
+  75%, 83% {
+    left: 50%;
+    background-color: var(--stage-interviewing);
+  }
+  100% {
+    left: 0%;
+    background-color: var(--stage-applied);
+  }
+}
+
+.stage-travel {
+  animation: stage-travel 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-travel {
+    animation: none;
+    left: 0%;
+    background-color: var(--stage-applied);
+  }
+}
+
+/* each stage label lights up in its own color for exactly the window
+   where stage-travel's marker is sitting on top of it â€” same 7s cycle,
+   same checkpoints, kept in sync by using identical percentages. */
+@keyframes glow-applied {
+  0%, 8% {
+    color: var(--stage-applied);
+    filter: drop-shadow(0 0 9px var(--stage-applied));
+  }
+  20%, 88% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  100% {
+    color: var(--stage-applied);
+    filter: drop-shadow(0 0 9px var(--stage-applied));
+  }
+}
+
+@keyframes glow-interviewing {
+  0%, 20% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  25%, 33% {
+    color: var(--stage-interviewing);
+    filter: drop-shadow(0 0 9px var(--stage-interviewing));
+  }
+  45%, 63% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  75%, 83% {
+    color: var(--stage-interviewing);
+    filter: drop-shadow(0 0 9px var(--stage-interviewing));
+  }
+  95%, 100% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+}
+
+@keyframes glow-offer {
+  0%, 45% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  50%, 58% {
+    color: var(--stage-offer);
+    filter: drop-shadow(0 0 9px var(--stage-offer));
+  }
+  70%, 100% {
+    color: var(--ink-faint);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+}
+
+.glow-applied {
+  animation: glow-applied 7s ease-in-out infinite;
+}
+.glow-interviewing {
+  animation: glow-interviewing 7s ease-in-out infinite;
+}
+.glow-offer {
+  animation: glow-offer 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-applied,
+  .glow-interviewing,
+  .glow-offer {
+    animation: none;
+  }
+  .glow-applied {
+    color: var(--stage-applied);
   }
 }
