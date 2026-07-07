@@ -4,11 +4,23 @@ A Kanban-style job-application tracker. Applications move across **Applied →
 Interviewing → Offer → Rejected** columns by drag-and-drop, and a stats page
 turns their stage history into a conversion funnel.
 
-**Live:** [kanbo-two.vercel.app](https://kanbo-two.vercel.app)
+**[▶ Try the live demo — no sign-up](https://kanbo-two.vercel.app/sign-in)** ·
+[kanbo-two.vercel.app](https://kanbo-two.vercel.app)
+
+![The Kanbo board — applications across Applied, Interviewing, Offer, and Rejected columns](docs/board.png)
 
 Built as a portfolio project to exercise a modern full-stack Next.js setup:
 Server Actions for mutations, Auth.js v5 with database sessions, Prisma 7 on
 serverless Postgres, and an optimistic drag-and-drop board.
+
+> **Just want to look around?** The sign-in page has an **Explore a live demo**
+> button that drops you straight into a seeded board — no OAuth, no account. It
+> mints a throwaway user with a real database-backed session, so everything
+> (drag, edit, stats) works exactly as it does for a signed-in user.
+
+### Stats — a conversion funnel from real stage history
+
+![The stats page — interview and offer conversion rates, average days between stages, and a pipeline breakdown](docs/stats.png)
 
 ## Features
 
@@ -24,6 +36,9 @@ serverless Postgres, and an optimistic drag-and-drop board.
   computed from real stage-transition history (not just current stage).
 - **Quality-of-life** — search, CSV export, an onboarding walkthrough, keyboard
   shortcuts, and light/dark themes.
+- **No-sign-up demo** — a one-click demo login seeds a sample board and issues a
+  real database session, so recruiters can try the full app without OAuth; a
+  forced walkthrough and drag hint guide first-time visitors.
 
 ## Stack
 
@@ -110,6 +125,11 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Stage-transition history.** Every stage change writes a `StageTransition`
   row, so the stats page can compute real conversion rates and time-in-stage
   rather than inferring them from an application's current stage alone.
+- **No-OAuth demo login.** The demo button mints a throwaway user and writes the
+  same thing the Prisma adapter writes on a real OAuth sign-in — a `Session` row
+  plus the matching Auth.js session cookie — so `requireUser()` resolves the demo
+  visitor identically, with no separate "guest mode" code path to keep in sync
+  (see `startDemoSession` in `src/actions/demo.ts`).
 
 ## Tests
 
