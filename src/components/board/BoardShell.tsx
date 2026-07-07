@@ -105,10 +105,10 @@ export default function BoardShell({
       )}
 
       <div className="p-6">
-        <KanbanBoard applications={applications} query={query} />
+        <KanbanBoard applications={applications} query={query} isDemo={isDemo} />
       </div>
 
-      <Walkthrough />
+      <Walkthrough isDemo={isDemo} />
     </div>
   );
 }

@@ -28,17 +28,24 @@ const steps: Step[] = [
 ];
 
 const STORAGE_KEY = "kanbo-walkthrough-seen";
+// Demo visitors get the tour every fresh session, keyed on sessionStorage so a
+// mid-demo refresh doesn't re-nag: a recruiter who previously dismissed the
+// tour (setting the localStorage flag) should still see it when they demo.
+const DEMO_STORAGE_KEY = "kanbo-demo-tour-seen";
 
-export default function Walkthrough() {
+export default function Walkthrough({ isDemo = false }: { isDemo?: boolean }) {
   const [stepIndex, setStepIndex] = useState<number | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
+  const store = isDemo ? "sessionStorage" : "localStorage";
+  const storageKey = isDemo ? DEMO_STORAGE_KEY : STORAGE_KEY;
+
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is browser-only and can't be read during render/SSR, so checking whether the walkthrough was already seen genuinely belongs in a one-time mount effect.
+    if (!window[store].getItem(storageKey)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- web storage is browser-only and can't be read during render/SSR, so checking whether the walkthrough was already seen genuinely belongs in a one-time mount effect.
       setStepIndex(0);
     }
-  }, []);
+  }, [store, storageKey]);
 
   useEffect(() => {
     if (stepIndex === null) return;
@@ -60,7 +67,7 @@ export default function Walkthrough() {
   }, [stepIndex]);
 
   function finish() {
-    localStorage.setItem(STORAGE_KEY, "1");
+    window[store].setItem(storageKey, "1");
     setStepIndex(null);
     setRect(null);
   }

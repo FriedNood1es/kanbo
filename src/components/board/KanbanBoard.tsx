@@ -18,6 +18,9 @@ import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
 
 const MOVE_ERROR_MS = 4000;
+// Remembered per demo session so the nudge stays gone after the first drag,
+// even across a refresh, without following the visitor out of demo mode.
+const DRAG_HINT_KEY = "kanbo-demo-drag-hint-done";
 
 // Field-by-field rather than a single `updatedAt` comparison: a drag's local
 // optimistic update only patches stage/position, leaving its `updatedAt`
@@ -42,13 +45,32 @@ function sameApplication(a: Application, b: Application) {
 export default function KanbanBoard({
   applications: initial,
   query = "",
+  isDemo = false,
 }: {
   applications: Application[];
   query?: string;
+  isDemo?: boolean;
 }) {
   const [applications, setApplications] = useState(initial);
   const normalizedQuery = query.trim().toLowerCase();
   const [isSeeding, startSeeding] = useTransition();
+
+  // Demo-only nudge toward the app's signature interaction; hidden once the
+  // visitor drags anything (see dismissDragHint in handleDragEnd).
+  const [showDragHint, setShowDragHint] = useState(false);
+  useEffect(() => {
+    if (isDemo && initial.length > 0 && !sessionStorage.getItem(DRAG_HINT_KEY)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is browser-only and can't be read during SSR/render, so this one-time check belongs in a mount effect.
+      setShowDragHint(true);
+    }
+  }, [isDemo, initial.length]);
+
+  function dismissDragHint() {
+    setShowDragHint((shown) => {
+      if (shown) sessionStorage.setItem(DRAG_HINT_KEY, "1");
+      return false;
+    });
+  }
 
   // A card moving to a different stage unmounts it from its old column's
   // React tree and mounts a fresh instance in the new column's tree (they're
@@ -148,6 +170,10 @@ export default function KanbanBoard({
     const { source, target } = operation;
     if (!source || !target || canceled) return;
 
+    // They've discovered dragging — retire the hint even if this particular
+    // drop is a no-op that returns below.
+    dismissDragHint();
+
     const activeId = String(source.id);
     const overId = String(target.id);
     const overStage = (target.data as { stage?: Stage } | undefined)?.stage;
@@ -219,6 +245,26 @@ export default function KanbanBoard({
           </div>
         ) : (
           <>
+            {showDragHint && (
+              <div className="flex items-center gap-2.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-ink-dim">
+                <span aria-hidden className="animate-pulse text-base leading-none text-accent">
+                  ⇄
+                </span>
+                <span>
+                  <span className="font-semibold text-ink">Try it:</span> grab a card by its
+                  handle and drag it to another column.
+                </span>
+                <button
+                  type="button"
+                  onClick={dismissDragHint}
+                  aria-label="Dismiss tip"
+                  className="ml-auto shrink-0 text-lg leading-none text-ink-faint hover:text-ink"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <BoardStats applications={applications} />
               <ApplicationForm
