@@ -18,6 +18,16 @@ isn't lost.
   button on the sign-in page — both follow the same pattern as the Google
   addition.
 
+## Demo mode
+
+- **Each "Explore a live demo" click mints a throwaway user** (email
+  `demo-<random>@demo.kanbo.local`) with a seeded board and a 1-day database
+  session, so recruiters can try the app without OAuth. These accumulate: no
+  automatic cleanup is wired up yet. When it's worth it, add a scheduled job
+  that deletes users whose email ends in `@demo.kanbo.local` and whose session
+  has expired — the `onDelete: Cascade` on Application/Session takes their data
+  with them. The marker lives in `src/lib/demo-user.ts`.
+
 ## Infra / deployment
 
 - **Dev and production point at the same Neon database** — a deliberate

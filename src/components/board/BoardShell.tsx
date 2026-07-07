@@ -13,11 +13,13 @@ export default function BoardShell({
   applications,
   userImage,
   userLabel,
+  isDemo = false,
   onSignOut,
 }: {
   applications: Application[];
   userImage: string | null | undefined;
   userLabel: string;
+  isDemo?: boolean;
   onSignOut: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -90,6 +92,17 @@ export default function BoardShell({
           <AccountMenu image={userImage} label={userLabel} onSignOut={onSignOut} />
         </div>
       </header>
+
+      {isDemo && (
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-line bg-accent/10 px-5 py-2 text-center text-sm text-ink-dim">
+          <span>
+            You&rsquo;re exploring a live demo — changes save to a temporary account.
+          </span>
+          <a href="/sign-in" className="font-semibold text-accent hover:underline">
+            Sign in to keep your own board →
+          </a>
+        </div>
+      )}
 
       <div className="p-6">
         <KanbanBoard applications={applications} query={query} />

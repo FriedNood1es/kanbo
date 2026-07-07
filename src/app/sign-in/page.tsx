@@ -1,4 +1,5 @@
 import { signIn } from "@/lib/auth";
+import { startDemoSession } from "@/actions/demo";
 import Button from "@/components/ui/Button";
 import KanboMark from "@/components/ui/KanboMark";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -74,6 +75,21 @@ export default function SignInPage() {
             Sign in with Google
           </Button>
         </form>
+
+        <div className="flex items-center gap-3 py-1 text-sm text-ink-faint">
+          <span className="h-px flex-1 bg-line" />
+          or
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <form action={startDemoSession}>
+          <Button type="submit" variant="primary" className="w-full gap-3 py-4 text-lg">
+            Explore a live demo
+          </Button>
+        </form>
+        <p className="text-center text-sm text-ink-faint">
+          No account needed — loads a sample board you can drag around.
+        </p>
       </div>
     </div>
   );

@@ -1,10 +1,13 @@
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { signOut } from "@/lib/auth";
+import { isDemoEmail } from "@/lib/demo-user";
 import BoardShell from "@/components/board/BoardShell";
 
 export default async function BoardPage() {
   const user = await requireUser();
+
+  const isDemo = isDemoEmail(user.email);
 
   const applications = await prisma.application.findMany({
     where: { userId: user.id },
@@ -20,7 +23,8 @@ export default async function BoardPage() {
     <BoardShell
       applications={applications}
       userImage={user.image}
-      userLabel={user.email ?? user.name ?? "Account"}
+      userLabel={isDemo ? "Demo Visitor" : user.email ?? user.name ?? "Account"}
+      isDemo={isDemo}
       onSignOut={handleSignOut}
     />
   );

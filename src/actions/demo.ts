@@ -1,8 +1,12 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
+import { DEMO_EMAIL_DOMAIN } from "@/lib/demo-user";
 import type { ApplicationStage } from "@/generated/prisma";
 import type { ActionResult } from "./applications";
 
@@ -74,8 +78,7 @@ const demoApplications: DemoApplication[] = [
   },
 ];
 
-export async function seedDemoApplications(): Promise<ActionResult> {
-  const user = await requireUser();
+async function seedDemoData(userId: string) {
   const stagePositions: Partial<Record<ApplicationStage, number>> = {};
 
   await prisma.$transaction(async (tx) => {
@@ -86,7 +89,7 @@ export async function seedDemoApplications(): Promise<ActionResult> {
 
       const application = await tx.application.create({
         data: {
-          userId: user.id,
+          userId,
           company: demo.company,
           role: demo.role,
           jobUrl: demo.jobUrl,
@@ -112,8 +115,52 @@ export async function seedDemoApplications(): Promise<ActionResult> {
       }
     }
   });
+}
+
+// Seed the sample board into the signed-in user's own account (offered from
+// the empty state).
+export async function seedDemoApplications(): Promise<ActionResult> {
+  const user = await requireUser();
+  await seedDemoData(user.id);
 
   revalidatePath("/board");
   revalidatePath("/stats");
   return { success: true };
+}
+
+// One-click "try it" login with no OAuth: mint a throwaway user, seed the
+// sample board, and hand back a real database-backed session. This mirrors
+// exactly what the Prisma adapter does on an OAuth sign-in — a Session row
+// plus the Auth.js session cookie pointing at it — so requireUser() resolves
+// the demo visitor like any other logged-in user.
+export async function startDemoSession(): Promise<void> {
+  const user = await prisma.user.create({
+    data: {
+      name: "Demo Visitor",
+      email: `demo-${randomBytes(8).toString("hex")}@${DEMO_EMAIL_DOMAIN}`,
+    },
+  });
+
+  await seedDemoData(user.id);
+
+  const sessionToken = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + DAY_MS);
+  await prisma.session.create({ data: { sessionToken, userId: user.id, expires } });
+
+  // Auth.js names the cookie __Secure-authjs.session-token when the request is
+  // https and authjs.session-token otherwise (secure derived from url.protocol
+  // in @auth/core). Match that off the forwarded proto so the cookie we set is
+  // the exact one auth() reads back.
+  const isHttps = (await headers()).get("x-forwarded-proto") === "https";
+  const cookieName = `${isHttps ? "__Secure-" : ""}authjs.session-token`;
+
+  (await cookies()).set(cookieName, sessionToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: isHttps,
+    expires,
+  });
+
+  redirect("/board");
 }
