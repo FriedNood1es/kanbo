@@ -160,7 +160,7 @@ export default function KanbanBoard({
     if (!normalizedQuery) return true;
     return (
       application.company.toLowerCase().includes(normalizedQuery) ||
-      application.role.toLowerCase().includes(normalizedQuery)
+      (application.role?.toLowerCase().includes(normalizedQuery) ?? false)
     );
   }
 
@@ -418,7 +418,7 @@ export default function KanbanBoard({
               />
               <div className="flex flex-1 flex-col gap-1 p-3">
                 <p className="text-base font-semibold text-ink">{app.company}</p>
-                <p className="text-sm text-ink-dim">{app.role}</p>
+                {app.role && <p className="text-sm text-ink-dim">{app.role}</p>}
               </div>
             </div>
           );

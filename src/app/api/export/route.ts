@@ -24,7 +24,7 @@ export async function GET() {
 
   const rows = applications.map((a) => [
     a.company,
-    a.role,
+    a.role ?? "",
     stageMeta[a.stage].label,
     a.jobUrl ?? "",
     a.appliedAt.toISOString().slice(0, 10),

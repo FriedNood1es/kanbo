@@ -9,7 +9,16 @@ export const applicationStages = [
 
 export const applicationInputSchema = z.object({
   company: z.string().trim().min(1, "Company is required").max(200),
-  role: z.string().trim().min(1, "Role is required").max(200),
+  // Optional so a pasted posting link alone is enough to save — the company
+  // autofill covers Company, everything else already defaults. Empty maps to
+  // `null` (same reason as `notes` below): clearing the field in the edit
+  // form must actually erase an existing role.
+  role: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((v) => (v ? v : null)),
   jobUrl: z
     .string()
     .trim()

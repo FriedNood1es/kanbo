@@ -22,9 +22,15 @@ describe("applicationInputSchema", () => {
     }
   });
 
-  it("requires a non-empty company and role", () => {
+  it("requires a non-empty company but lets role be blank", () => {
     expect(applicationInputSchema.safeParse({ company: "", role: "Engineer" }).success).toBe(false);
-    expect(applicationInputSchema.safeParse({ company: "Acme", role: "   " }).success).toBe(false);
+    const r = applicationInputSchema.safeParse({ company: "Acme", role: "   " });
+    expect(r.success && r.data.role).toBeNull();
+  });
+
+  it("maps a missing role to null so paste-only saves work", () => {
+    const r = applicationInputSchema.safeParse({ company: "Acme" });
+    expect(r.success && r.data.role).toBeNull();
   });
 
   it("rejects company/role longer than 200 chars", () => {

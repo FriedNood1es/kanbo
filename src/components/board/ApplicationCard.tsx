@@ -82,7 +82,7 @@ export default function ApplicationCard({
           <CompanyAvatar company={application.company} />
           <div className="flex-1">
             <p className="text-base font-semibold text-ink">{application.company}</p>
-            <p className="text-sm text-ink-dim">{application.role}</p>
+            {application.role && <p className="text-sm text-ink-dim">{application.role}</p>}
           </div>
         </div>
 

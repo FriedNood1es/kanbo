@@ -100,7 +100,7 @@ export default function ApplicationForm({
             <input
               name="role"
               required
-              defaultValue={application?.role}
+              defaultValue={application?.role ?? ""}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
