@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { DragDropProvider } from "@dnd-kit/react";
-import type { DragEndEvent } from "@dnd-kit/react";
+import { DragDropProvider, DragOverlay, KeyboardSensor, PointerSensor } from "@dnd-kit/react";
+import type { DragEndEvent, DragOverEvent } from "@dnd-kit/react";
+import { PointerActivationConstraints } from "@dnd-kit/dom";
 import type { Application } from "@/generated/prisma";
 import { applicationStages } from "@/lib/validation";
 import { computePosition } from "@/lib/position";
+import { cardTilt } from "@/lib/tilt";
 import KanbanColumn from "@/components/board/KanbanColumn";
 import BoardStats from "@/components/board/BoardStats";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import { moveApplication } from "@/actions/board";
 import { deleteApplication } from "@/actions/applications";
 import { seedDemoApplications } from "@/actions/demo";
-import type { Stage } from "@/lib/stages";
+import { stageMeta, type Stage } from "@/lib/stages";
 import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
@@ -21,6 +23,45 @@ const MOVE_ERROR_MS = 4000;
 // Remembered per demo session so the nudge stays gone after the first drag,
 // even across a refresh, without following the visitor out of demo mode.
 const DRAG_HINT_KEY = "kanbo-demo-drag-hint-done";
+
+// Module scope so the sensor descriptors keep a stable identity across
+// renders — recreating them per render would reconfigure the drag manager
+// mid-gesture.
+const boardSensors = [
+  PointerSensor.configure({
+    // A small travel threshold before lift so plain clicks don't grab the
+    // card (Trello waits a few px too). Touch keeps a long-press delay so
+    // scrolling the board on mobile doesn't start a drag instead.
+    activationConstraints: (event) =>
+      event.pointerType === "touch"
+        ? [new PointerActivationConstraints.Delay({ value: 250, tolerance: 8 })]
+        : [new PointerActivationConstraints.Distance({ value: 6 })],
+    // Pointerdown listens on these elements (defaults to the handle alone).
+    // Including the card element is what makes the whole card grabbable;
+    // the handle stays as-is so the keyboard drag path is untouched.
+    activatorElements: (source) => [source.handle, source.element],
+    // Cards grab anywhere, so clicks on their interactive descendants must
+    // never arm a drag — including the scrollable notes region, where a
+    // mouse-drag means "scroll the note," not "lift the card." The handle
+    // and the card surface itself always stay activatable: without those
+    // carve-outs (which the library default has and a plain override
+    // drops), pressing the grip button matches "button" below and no drag
+    // can ever start.
+    preventActivation: (event, source) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return false;
+      if (target === source.element) return false;
+      const handle = source.handle;
+      if (handle && (target === handle || handle.contains(target))) return false;
+      return (
+        target.closest(
+          "button, a, input, textarea, select, [contenteditable], [data-no-drag]",
+        ) !== null
+      );
+    },
+  }),
+  KeyboardSensor,
+];
 
 // Field-by-field rather than a single `updatedAt` comparison: a drag's local
 // optimistic update only patches stage/position, leaving its `updatedAt`
@@ -165,10 +206,79 @@ export default function KanbanBoard({
       .sort((a, b) => a.position - b.position);
   }
 
+  // Snapshot of the board when the current drag started — the rollback target
+  // for a canceled drag or a failed persist, since the live preview below
+  // mutates `applications` mid-drag.
+  const dragSnapshot = useRef<Application[] | null>(null);
+
+  // Maps a hovered drop target to the stage/position a drop would commit.
+  // Shared by the preview and the commit so the two can never disagree.
+  // Null means "no visible change" — hovering the card itself, or a target
+  // that resolves to the card's current slot.
+  function placementFor(
+    items: Application[],
+    activeId: string,
+    overId: string,
+    overStage?: Stage,
+  ): { active: Application; newStage: Stage; newPosition: number } | null {
+    if (overId === activeId) return null;
+    const active = items.find((a) => a.id === activeId);
+    if (!active) return null;
+    const newStage: Stage = overStage ?? active.stage;
+    const siblings = items
+      .filter((a) => a.stage === newStage && a.id !== activeId)
+      .sort((a, b) => a.position - b.position);
+    const overIndex = siblings.findIndex((a) => a.id === overId);
+    const insertIndex = overIndex === -1 ? siblings.length : overIndex;
+    const newPosition = computePosition(
+      siblings[insertIndex - 1]?.position,
+      siblings[insertIndex]?.position,
+    );
+    if (newStage === active.stage && newPosition === active.position) return null;
+    return { active, newStage, newPosition };
+  }
+
+  function applyPlacement(
+    prev: Application[],
+    placement: { active: Application; newStage: Stage; newPosition: number },
+  ): Application[] {
+    return prev.map((a) =>
+      a.id === placement.active.id
+        ? { ...a, stage: placement.newStage, position: placement.newPosition }
+        : a,
+    );
+  }
+
+  function handleDragStart() {
+    dragSnapshot.current = applications;
+  }
+
+  // Live reorder preview: apply the same placement a drop would commit, so
+  // siblings part around the dragged card mid-drag. Pure React state — unlike
+  // the DOM-mutating sort plugin this replaces, every node stays reconciled,
+  // so cancel is a plain state restore and rapid drags can't desync the DOM.
+  function handleDragOver(event: DragOverEvent) {
+    const { source, target } = event.operation;
+    if (!source || !target) return;
+    const overStage = (target.data as { stage?: Stage } | undefined)?.stage;
+    const activeId = String(source.id);
+    const overId = String(target.id);
+    setApplications((prev) => {
+      const placement = placementFor(prev, activeId, overId, overStage);
+      return placement ? applyPlacement(prev, placement) : prev;
+    });
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { operation, canceled } = event;
     const { source, target } = operation;
-    if (!source || !target || canceled) return;
+    const snapshot = dragSnapshot.current;
+    dragSnapshot.current = null;
+
+    if (!source || !target || canceled) {
+      if (canceled && snapshot) setApplications(snapshot);
+      return;
+    }
 
     // They've discovered dragging — retire the hint even if this particular
     // drop is a no-op that returns below.
@@ -178,29 +288,18 @@ export default function KanbanBoard({
     const overId = String(target.id);
     const overStage = (target.data as { stage?: Stage } | undefined)?.stage;
 
-    const active = applications.find((a) => a.id === activeId);
-    if (!active) return;
+    const placement = placementFor(applications, activeId, overId, overStage);
+    if (!placement) return;
 
-    const newStage: Stage = overStage ?? active.stage;
-    const siblings = columnItems(newStage, activeId);
-    const overIndex = siblings.findIndex((a) => a.id === overId);
-    const insertIndex = overIndex === -1 ? siblings.length : overIndex;
+    setApplications((prev) => applyPlacement(prev, placement));
 
-    const newPosition = computePosition(
-      siblings[insertIndex - 1]?.position,
-      siblings[insertIndex]?.position,
-    );
-
-    if (newStage === active.stage && newPosition === active.position) return;
-
-    const previous = applications;
-    setApplications((prev) =>
-      prev.map((a) => (a.id === activeId ? { ...a, stage: newStage, position: newPosition } : a)),
-    );
-
-    moveApplication({ id: activeId, stage: newStage, position: newPosition }).then((result) => {
+    moveApplication({
+      id: activeId,
+      stage: placement.newStage,
+      position: placement.newPosition,
+    }).then((result) => {
       if (result.success) return;
-      setApplications(previous);
+      if (snapshot) setApplications(snapshot);
       if (moveErrorTimer.current) clearTimeout(moveErrorTimer.current);
       setMoveError(`Couldn't save that move: ${result.error}`);
       moveErrorTimer.current = setTimeout(() => {
@@ -213,7 +312,12 @@ export default function KanbanBoard({
   const isEmpty = applications.length === 0;
 
   return (
-    <DragDropProvider onDragEnd={handleDragEnd}>
+    <DragDropProvider
+      sensors={boardSensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-col gap-4">
         {isEmpty ? (
           <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-line bg-ground-raised px-6 py-16 text-center">
@@ -251,8 +355,8 @@ export default function KanbanBoard({
                   ⇄
                 </span>
                 <span>
-                  <span className="font-semibold text-ink">Try it:</span> grab a card by its
-                  handle and drag it to another column.
+                  <span className="font-semibold text-ink">Try it:</span> grab a card
+                  and drag it to another column.
                 </span>
                 <button
                   type="button"
@@ -293,6 +397,33 @@ export default function KanbanBoard({
       </div>
 
       {moveError && <Toast message={moveError} />}
+
+      {/* Floating clone that follows the pointer while the source card stays
+          behind as a dimmed placeholder — the lift Trello has and an in-place
+          transform can't give. Deliberately lightweight (no buttons or forms):
+          it's a drag ghost, not a second interactive card. */}
+      <DragOverlay>
+        {(source) => {
+          const app = applications.find((a) => a.id === String(source.id));
+          if (!app) return null;
+          return (
+            <div
+              className="flex w-64 overflow-hidden rounded-md border border-line bg-card opacity-95 shadow-xl"
+              style={{ transform: `rotate(${cardTilt(app.id)}deg)` }}
+            >
+              <span
+                className="w-1.5 shrink-0"
+                style={{ backgroundColor: stageMeta[app.stage].color }}
+                aria-hidden
+              />
+              <div className="flex flex-1 flex-col gap-1 p-3">
+                <p className="text-base font-semibold text-ink">{app.company}</p>
+                <p className="text-sm text-ink-dim">{app.role}</p>
+              </div>
+            </div>
+          );
+        }}
+      </DragOverlay>
     </DragDropProvider>
   );
 }

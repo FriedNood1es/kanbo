@@ -5,7 +5,6 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { SortableKeyboardPlugin } from "@dnd-kit/dom/sortable";
 import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
-import { cardTilt } from "@/lib/tilt";
 import { formatShortDate, getAttentionBadge } from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
@@ -26,7 +25,7 @@ export default function ApplicationCard({
   onDeleteRequest: (application: Application) => void;
   isNew: boolean;
 }) {
-  const { ref, handleRef, isDragging } = useSortable({
+  const { ref, handleRef, isDragSource } = useSortable({
     id: application.id,
     index,
     group: application.stage,
@@ -37,13 +36,12 @@ export default function ApplicationCard({
     // then updates React state on top of a DOM React no longer has an
     // accurate picture of — the actual cause of cards vanishing or
     // subsequent drags silently failing. Keeping only the keyboard plugin
-    // means the board only reorders once, when React re-renders from our
-    // own state update, which is the one thing keeping DOM and state
-    // in sync.
+    // means the board only reorders through React state (the live preview in
+    // KanbanBoard's onDragOver plus the commit in onDragEnd), which is the
+    // one thing keeping DOM and state in sync.
     plugins: [SortableKeyboardPlugin],
   });
   const meta = stageMeta[application.stage];
-  const tilt = cardTilt(application.id);
   const badge = getAttentionBadge(application);
   const needsAttention = badge?.kind === "overdue" || badge?.kind === "stale";
   const [isShredding, setIsShredding] = useState(false);
@@ -117,7 +115,10 @@ export default function ApplicationCard({
         )}
 
         {application.notes && (
-          <div className="max-h-28 overflow-y-auto rounded-md bg-ground px-2 py-1.5 text-sm text-ink-dim">
+          <div
+            data-no-drag
+            className="max-h-28 overflow-y-auto rounded-md bg-ground px-2 py-1.5 text-sm text-ink-dim"
+          >
             <NoteContent text={application.notes} />
           </div>
         )}
@@ -159,11 +160,11 @@ export default function ApplicationCard({
   return (
     // card-enter (plays once for a genuinely new card, per `isNew`) wraps a
     // bare dnd-kit-owned element — dnd-kit fully owns *its* transform for
-    // drag positioning, so the tilt instead lives one level deeper, on a
-    // plain child it never touches. `isNew` is tracked by KanbanBoard rather
-    // than derived from this component's own mount, because moving a card to
-    // a different stage unmounts it here and remounts it under the target
-    // column — a fresh mount that must *not* replay the entrance animation.
+    // drag positioning, so decorative transforms live on plain children it
+    // never touches. `isNew` is tracked by KanbanBoard rather than derived
+    // from this component's own mount, because moving a card to a different
+    // stage unmounts it here and remounts it under the target column — a
+    // fresh mount that must *not* replay the entrance animation.
     <div className={isNew ? "card-enter" : undefined}>
       <div ref={ref}>
         {isShredding ? (
@@ -193,11 +194,14 @@ export default function ApplicationCard({
             })}
           </div>
         ) : (
+          // While its overlay clone floats under the pointer, the source
+          // card dims into a placeholder holding its slot. Lift is instant
+          // (no transform transition): the old springy ease read as input
+          // lag on grab.
           <div
-            style={{ transform: isDragging ? `rotate(${tilt}deg)` : undefined }}
-            className={`flex overflow-hidden rounded-md border bg-card shadow-sm transition-[transform,box-shadow,opacity] duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`flex cursor-grab overflow-hidden rounded-md border bg-card shadow-sm transition-[box-shadow,opacity] duration-150 active:cursor-grabbing ${
               needsAttention ? "border-danger/50" : "border-line"
-            } ${isDragging ? "scale-105 opacity-90 shadow-lg" : "hover:shadow-md"}`}
+            } ${isDragSource ? "opacity-30" : "hover:shadow-md"}`}
           >
             {cardContent}
           </div>
