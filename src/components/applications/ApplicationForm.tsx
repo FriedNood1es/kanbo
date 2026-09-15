@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import type { Application } from "@/generated/prisma";
 import { createApplication, updateApplicationDetails } from "@/actions/applications";
 import Button from "@/components/ui/Button";
@@ -27,11 +27,19 @@ const hintClass = "-mt-0.5 font-sans text-xs normal-case tracking-normal text-in
 export default function ApplicationForm({
   application,
   trigger,
+  companies = [],
+  roles = [],
 }: {
   application?: Application;
   trigger: React.ReactNode;
+  companies?: string[];
+  roles?: string[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // Unique per dialog instance — every card renders its own form, so a
+  // shared id would point every input at the first dialog's datalist.
+  const companyListId = useId();
+  const roleListId = useId();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const isEditing = !!application;
@@ -85,12 +93,30 @@ export default function ApplicationForm({
             {isEditing ? "Edit application" : "Add application"}
           </h2>
 
+          {/* Job URL first: pasting the link is how most entries start, so the
+              form follows that flow — paste, Tab, complete, save. */}
+          <label className={labelClass}>
+            Job URL
+            <input
+              name="jobUrl"
+              type="text"
+              placeholder="facebook.com/jobs/…"
+              defaultValue={application?.jobUrl ?? ""}
+              autoFocus={!isEditing}
+              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
+            />
+            <p className={hintClass}>
+              We&rsquo;ll try to show the company&rsquo;s logo automatically from this.
+            </p>
+          </label>
+
           <label className={labelClass}>
             Company
             <input
               name="company"
               required
               defaultValue={application?.company}
+              list={companies.length > 0 ? companyListId : undefined}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
@@ -101,6 +127,7 @@ export default function ApplicationForm({
               name="role"
               required
               defaultValue={application?.role ?? ""}
+              list={roles.length > 0 ? roleListId : undefined}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
           </label>
@@ -118,6 +145,21 @@ export default function ApplicationForm({
               We&rsquo;ll try to show the company&rsquo;s logo automatically from this.
             </p>
           </label>
+
+          {companies.length > 0 && (
+            <datalist id={companyListId}>
+              {companies.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          )}
+          {roles.length > 0 && (
+            <datalist id={roleListId}>
+              {roles.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
+          )}
 
           <label className={labelClass}>
             Applied on

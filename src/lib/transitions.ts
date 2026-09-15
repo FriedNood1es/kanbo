@@ -23,3 +23,19 @@ export function decideStageChange(
   }
   return { kind: "record" };
 }
+
+// When a card most recently entered a stage — e.g. how long ago it was
+// rejected. Null when it never entered that stage, in which case callers
+// treat the card as not old (fail-open, never fail-hidden).
+export function latestStageEntry(
+  transitions: { toStage: Stage; createdAt: Date }[],
+  stage: Stage,
+): Date | null {
+  let latest: Date | null = null;
+  for (const t of transitions) {
+    if (t.toStage === stage && (latest === null || t.createdAt > latest)) {
+      latest = t.createdAt;
+    }
+  }
+  return latest;
+}

@@ -11,12 +11,16 @@ import Walkthrough from "@/components/board/Walkthrough";
 
 export default function BoardShell({
   applications,
+  olderRejected = [],
+  ghostedIds = [],
   userImage,
   userLabel,
   isDemo = false,
   onSignOut,
 }: {
   applications: Application[];
+  olderRejected?: { id: string; daysAgo: number }[];
+  ghostedIds?: string[];
   userImage: string | null | undefined;
   userLabel: string;
   isDemo?: boolean;
@@ -105,7 +109,13 @@ export default function BoardShell({
       )}
 
       <div className="p-6">
-        <KanbanBoard applications={applications} query={query} isDemo={isDemo} />
+        <KanbanBoard
+          applications={applications}
+          olderRejected={olderRejected}
+          ghostedIds={ghostedIds}
+          query={query}
+          isDemo={isDemo}
+        />
       </div>
 
       <Walkthrough isDemo={isDemo} />

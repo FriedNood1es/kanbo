@@ -5,7 +5,12 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { SortableKeyboardPlugin } from "@dnd-kit/dom/sortable";
 import type { Application } from "@/generated/prisma";
 import { stageMeta } from "@/lib/stages";
-import { formatShortDate, getAttentionBadge } from "@/lib/staleness";
+import {
+  formatGhostedMessage,
+  formatRejectionAge,
+  formatShortDate,
+  getAttentionBadge,
+} from "@/lib/staleness";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import Button from "@/components/ui/Button";
 import CompanyAvatar from "@/components/board/CompanyAvatar";
@@ -19,11 +24,17 @@ export default function ApplicationCard({
   index,
   onDeleteRequest,
   isNew,
+  companies,
+  roles,
+  olderDaysAgo,
 }: {
   application: Application;
   index: number;
   onDeleteRequest: (application: Application) => void;
   isNew: boolean;
+  companies: string[];
+  roles: string[];
+  olderDaysAgo?: number;
 }) {
   const { ref, handleRef, isDragSource } = useSortable({
     id: application.id,
@@ -44,6 +55,15 @@ export default function ApplicationCard({
   const meta = stageMeta[application.stage];
   const badge = getAttentionBadge(application);
   const needsAttention = badge?.kind === "overdue" || badge?.kind === "stale";
+  const ghostDays = badge?.kind === "ghosted" ? badge.days : undefined;
+  const isGhosted = ghostDays !== undefined;
+  // Tier-2 ghosts (60d+, the "their loss" copy) earn the watermark; tier-1
+  // stays clean with just the wash so the drama is reserved for true ghosts.
+  const isHaunted = ghostDays !== undefined && ghostDays >= 60;
+  // A long-collapsed rejection, expanded for review — filed-away look plus
+  // its age as a rubber stamp. The stamp states a fact, so it shows anywhere
+  // the card renders (column, search results).
+  const isOlder = olderDaysAgo !== undefined;
   const [isShredding, setIsShredding] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
@@ -83,6 +103,9 @@ export default function ApplicationCard({
           <div className="flex-1">
             <p className="text-base font-semibold text-ink">{application.company}</p>
             {application.role && <p className="text-sm text-ink-dim">{application.role}</p>}
+            <p className="label-stamp text-xs text-ink-faint">
+              Applied {formatShortDate(application.appliedAt)}
+            </p>
           </div>
         </div>
 
@@ -100,16 +123,25 @@ export default function ApplicationCard({
         {badge && (
           <p
             className={`label-stamp flex items-center gap-1.5 text-xs ${
-              needsAttention ? "font-semibold text-danger" : "text-ink-dim"
+              isGhosted
+                ? "font-semibold text-ghost"
+                : needsAttention
+                  ? "font-semibold text-danger"
+                  : "text-ink-dim"
             }`}
           >
-            {needsAttention ? (
+            {isGhosted ? (
+              <span aria-hidden className="ghost-bob inline-block">
+                👻
+              </span>
+            ) : needsAttention ? (
               <span aria-hidden>🚩</span>
             ) : (
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-faint" aria-hidden />
             )}
             {badge.kind === "overdue" && `Follow-up was due ${formatShortDate(badge.date)}`}
             {badge.kind === "upcoming" && `Follow up on ${formatShortDate(badge.date)}`}
+            {badge.kind === "ghosted" && formatGhostedMessage(badge.days)}
             {badge.kind === "stale" && `No update in ${badge.days}d — follow up?`}
           </p>
         )}
@@ -142,6 +174,8 @@ export default function ApplicationCard({
           <div className="flex items-center justify-end gap-2">
             <ApplicationForm
               application={application}
+              companies={companies}
+              roles={roles}
               trigger={
                 <Button type="button" variant="ghost" size="sm">
                   Edit
@@ -152,6 +186,14 @@ export default function ApplicationCard({
               Delete
             </Button>
           </div>
+        )}
+
+        {/* Quiet closure for rejected cards — calm paper, not a shout. The
+            ghost gets the mascot and the motion; rejection gets stillness. */}
+        {application.stage === "REJECTED" && (
+          <p className="label-stamp text-center text-xs text-ink-faint">
+            Not the one — onward.
+          </p>
         )}
       </div>
     </>
@@ -197,13 +239,38 @@ export default function ApplicationCard({
           // While its overlay clone floats under the pointer, the source
           // card dims into a placeholder holding its slot. Lift is instant
           // (no transform transition): the old springy ease read as input
-          // lag on grab.
+          // lag on grab. A long-collapsed rejection keeps its filed-away
+          // look here too, with its age stamped on like an archive mark; a
+          // ghosted card keeps its spectral wash — the three special states
+          // never share a surface.
           <div
-            className={`flex cursor-grab overflow-hidden rounded-md border bg-card shadow-sm transition-[box-shadow,opacity] duration-150 active:cursor-grabbing ${
-              needsAttention ? "border-danger/50" : "border-line"
-            } ${isDragSource ? "opacity-30" : "hover:shadow-md"}`}
+            className={`relative flex cursor-grab overflow-hidden rounded-md border shadow-sm transition-[box-shadow,opacity] duration-150 active:cursor-grabbing ${
+              isOlder
+                ? "border-dashed border-line bg-card saturate-[.6] shadow-none"
+                : isGhosted
+                  ? "border-ghost/60 bg-ghost/10 shadow-[0_0_12px_-2px_var(--ghost)]"
+                  : needsAttention
+                    ? "border-danger/50 bg-card"
+                    : "border-line bg-card"
+            } ${isDragSource ? "opacity-30" : isOlder ? "opacity-90" : "hover:shadow-md"}`}
           >
             {cardContent}
+            {olderDaysAgo !== undefined && (
+              <span
+                aria-hidden
+                className="label-stamp pointer-events-none absolute right-2 top-2 -rotate-6 rounded-sm border-2 border-current bg-card px-1 text-[0.65rem] font-semibold text-danger"
+              >
+                {formatRejectionAge(olderDaysAgo)}
+              </span>
+            )}
+            {isHaunted && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -bottom-2 right-1 select-none text-5xl opacity-20"
+              >
+                👻
+              </span>
+            )}
           </div>
         )}
       </div>

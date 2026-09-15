@@ -16,6 +16,7 @@
   --accent-ink: #fffdf8;
   --warn: #ad6a1e;
   --danger: #c0392b;
+  --ghost: #8c6e96;
 
   --stage-applied: #4c8fa6;
   --stage-interviewing: #d9a441;
@@ -36,6 +37,7 @@
     --accent-ink: #2b2622;
     --warn: #e8a24a;
   --danger: #e8685a;
+  --ghost: #c4a8d6;
 
     --stage-applied: #74b6d1;
     --stage-interviewing: #f0c065;
@@ -56,6 +58,7 @@
   --accent-ink: #2b2622;
   --warn: #e8a24a;
   --danger: #e8685a;
+  --ghost: #c4a8d6;
 
   --stage-applied: #74b6d1;
   --stage-interviewing: #f0c065;
@@ -75,6 +78,7 @@
   --accent-ink: #fffdf8;
   --warn: #ad6a1e;
   --danger: #c0392b;
+  --ghost: #8c6e96;
 
   --stage-applied: #4c8fa6;
   --stage-interviewing: #d9a441;
@@ -94,6 +98,7 @@
   --color-accent-ink: var(--accent-ink);
   --color-warn: var(--warn);
   --color-danger: var(--danger);
+  --color-ghost: var(--ghost);
   --color-stage-applied: var(--stage-applied);
   --color-stage-interviewing: var(--stage-interviewing);
   --color-stage-offer: var(--stage-offer);
@@ -162,6 +167,28 @@ body {
   .shred-strip {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* the ghost badge's 👻 bobs gently — playful, but layout never moves (the
+   icon is inline, so the card keeps its exact size and drag math is
+   untouched) */
+@keyframes ghost-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.ghost-bob {
+  animation: ghost-bob 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-bob {
+    animation: none;
   }
 }
 

@@ -20,6 +20,11 @@ type DemoApplication = {
   jobUrl?: string;
   notes?: string;
   followUpInDays?: number;
+  // Days since the card was last touched. Absent means "just now" (Prisma
+  // default) — set it on showcase cards whose badges (ghosted, stale) read
+  // updatedAt, or every seeded row would look freshly active regardless of
+  // how backdated its history is.
+  updatedDaysAgo?: number;
   // Ordered oldest-first; the last entry is the application's current stage.
   history: { stage: ApplicationStage; daysAgo: number }[];
 };
@@ -76,6 +81,41 @@ const demoApplications: DemoApplication[] = [
       { stage: "REJECTED", daysAgo: 10 },
     ],
   },
+  // Showcase rows below: one per card state, so a demo visitor sees every
+  // phase on first load — ghosted, stale, overdue, and a collapsed old
+  // rejection with its archive stamp.
+  {
+    company: "Figma",
+    role: "Product Engineer",
+    history: [
+      { stage: "APPLIED", daysAgo: 90 },
+      { stage: "INTERVIEWING", daysAgo: 75 },
+      { stage: "REJECTED", daysAgo: 63 },
+    ],
+    updatedDaysAgo: 63,
+  },
+  {
+    company: "Discord",
+    role: "Frontend Engineer",
+    history: [{ stage: "APPLIED", daysAgo: 35 }],
+    updatedDaysAgo: 35,
+  },
+  {
+    company: "Vercel",
+    role: "Solutions Architect",
+    history: [
+      { stage: "APPLIED", daysAgo: 30 },
+      { stage: "INTERVIEWING", daysAgo: 20 },
+    ],
+    updatedDaysAgo: 20,
+  },
+  {
+    company: "Reddit",
+    role: "Backend Engineer",
+    followUpInDays: -2,
+    history: [{ stage: "APPLIED", daysAgo: 14 }],
+    updatedDaysAgo: 14,
+  },
 ];
 
 async function seedDemoData(userId: string) {
@@ -98,6 +138,11 @@ async function seedDemoData(userId: string) {
           position,
           appliedAt: daysAgo(demo.history[0].daysAgo),
           followUpAt: demo.followUpInDays !== undefined ? daysFromNow(demo.followUpInDays) : null,
+          // Explicit only on showcase rows — undefined falls through to the
+          // Prisma @updatedAt default (now).
+          ...(demo.updatedDaysAgo !== undefined
+            ? { updatedAt: daysAgo(demo.updatedDaysAgo) }
+            : {}),
         },
       });
 

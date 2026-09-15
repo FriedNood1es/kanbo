@@ -15,6 +15,7 @@ import { moveApplication } from "@/actions/board";
 import { deleteApplication } from "@/actions/applications";
 import { seedDemoApplications } from "@/actions/demo";
 import { stageMeta, type Stage } from "@/lib/stages";
+import { getAttentionBadge } from "@/lib/staleness";
 import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
@@ -85,16 +86,56 @@ function sameApplication(a: Application, b: Application) {
 
 export default function KanbanBoard({
   applications: initial,
+  olderRejected = [],
+  ghostedIds = [],
   query = "",
   isDemo = false,
 }: {
   applications: Application[];
+  olderRejected?: { id: string; daysAgo: number }[];
+  ghostedIds?: string[];
   query?: string;
   isDemo?: boolean;
 }) {
   const [applications, setApplications] = useState(initial);
   const normalizedQuery = query.trim().toLowerCase();
   const [isSeeding, startSeeding] = useTransition();
+
+  // Server-computed rejection ages for collapsed old cards. A Map for O(1)
+  // lookup per card; empty while searching so matches are never hidden.
+  const olderRejectedAges = useMemo(
+    () =>
+      normalizedQuery
+        ? new Map<string, number>()
+        : new Map(olderRejected.map((o) => [o.id, o.daysAgo] as const)),
+    [olderRejected, normalizedQuery],
+  );
+
+  // Server-computed ghost ids for the graveyard toggle. Same contract as
+  // above: ghosts tuck away per column, searching shows everything. A ghost
+  // can never be old-rejected and vice versa (ghosting excludes REJECTED),
+  // so no column ever shows both toggles.
+  const ghostedIdSet = useMemo(
+    () => (normalizedQuery ? new Set<string>() : new Set(ghostedIds)),
+    [ghostedIds, normalizedQuery],
+  );
+
+  // Distinct values for the form's autocomplete — derived from the board's
+  // own rows, so suggestions need no fetch and no data ever leaves the app.
+  const allCompanies = useMemo(
+    () =>
+      Array.from(new Set(applications.map((a) => a.company))).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [applications],
+  );
+  const allRoles = useMemo(
+    () =>
+      Array.from(
+        new Set(applications.map((a) => a.role).filter((r): r is string => !!r)),
+      ).sort((a, b) => a.localeCompare(b)),
+    [applications],
+  );
 
   // Demo-only nudge toward the app's signature interaction; hidden once the
   // visitor drags anything (see dismissDragHint in handleDragEnd).
@@ -331,6 +372,8 @@ export default function KanbanBoard({
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2.5">
               <ApplicationForm
+                companies={allCompanies}
+                roles={allRoles}
                 trigger={
                   <Button type="button" data-tour="add-application">
                     Add your first application
@@ -372,6 +415,8 @@ export default function KanbanBoard({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <BoardStats applications={applications} />
               <ApplicationForm
+                companies={allCompanies}
+                roles={allRoles}
                 trigger={
                   <Button type="button" data-tour="add-application">
                     Add application
@@ -389,6 +434,10 @@ export default function KanbanBoard({
                   emptyMessage={normalizedQuery ? "No matches" : "No applications yet"}
                   onDeleteRequest={requestDelete}
                   newCardIds={newCardIds}
+                  companies={allCompanies}
+                  roles={allRoles}
+                  olderAges={stage === "REJECTED" ? olderRejectedAges : undefined}
+                  ghostIds={stage === "REJECTED" ? undefined : ghostedIdSet}
                 />
               ))}
             </div>
@@ -406,9 +455,17 @@ export default function KanbanBoard({
         {(source) => {
           const app = applications.find((a) => a.id === String(source.id));
           if (!app) return null;
+          const olderDaysAgo = olderRejectedAges.get(app.id);
+          const appGhosted = getAttentionBadge(app)?.kind === "ghosted";
           return (
             <div
-              className="flex w-64 overflow-hidden rounded-md border border-line bg-card opacity-95 shadow-xl"
+              className={`flex w-64 overflow-hidden rounded-md border opacity-95 shadow-xl ${
+                olderDaysAgo === undefined
+                  ? appGhosted
+                    ? "border-ghost/60 bg-ghost/10"
+                    : "border-line bg-card"
+                  : "border-dashed border-line bg-card saturate-[.6]"
+              }`}
               style={{ transform: `rotate(${cardTilt(app.id)}deg)` }}
             >
               <span
