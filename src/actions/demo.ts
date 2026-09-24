@@ -119,47 +119,44 @@ const demoApplications: DemoApplication[] = [
 ];
 
 async function seedDemoData(userId: string) {
+  // One query per app: the transitions ride along as a nested write, which
+  // Prisma runs as an implicit server-side transaction. This deliberately
+  // avoids prisma.$transaction — ~30 sequential queries over the Neon
+  // serverless driver exceed the 5s interactive-transaction timeout on prod
+  // (P2028), and explicit transactions don't work in the adapter's HTTP mode.
   const stagePositions: Partial<Record<ApplicationStage, number>> = {};
 
-  await prisma.$transaction(async (tx) => {
-    for (const demo of demoApplications) {
-      const currentStage = demo.history[demo.history.length - 1].stage;
-      const position = stagePositions[currentStage] ?? 0;
-      stagePositions[currentStage] = position + 1;
+  for (const demo of demoApplications) {
+    const currentStage = demo.history[demo.history.length - 1].stage;
+    const position = stagePositions[currentStage] ?? 0;
+    stagePositions[currentStage] = position + 1;
 
-      const application = await tx.application.create({
-        data: {
-          userId,
-          company: demo.company,
-          role: demo.role,
-          jobUrl: demo.jobUrl,
-          notes: demo.notes,
-          stage: currentStage,
-          position,
-          appliedAt: daysAgo(demo.history[0].daysAgo),
-          followUpAt: demo.followUpInDays !== undefined ? daysFromNow(demo.followUpInDays) : null,
-          // Explicit only on showcase rows — undefined falls through to the
-          // Prisma @updatedAt default (now).
-          ...(demo.updatedDaysAgo !== undefined
-            ? { updatedAt: daysAgo(demo.updatedDaysAgo) }
-            : {}),
-        },
-      });
-
-      let previousStage: ApplicationStage | null = null;
-      for (const step of demo.history) {
-        await tx.stageTransition.create({
-          data: {
-            applicationId: application.id,
-            fromStage: previousStage,
+    await prisma.application.create({
+      data: {
+        userId,
+        company: demo.company,
+        role: demo.role,
+        jobUrl: demo.jobUrl,
+        notes: demo.notes,
+        stage: currentStage,
+        position,
+        appliedAt: daysAgo(demo.history[0].daysAgo),
+        followUpAt: demo.followUpInDays !== undefined ? daysFromNow(demo.followUpInDays) : null,
+        // Explicit only on showcase rows — undefined falls through to the
+        // Prisma @updatedAt default (now).
+        ...(demo.updatedDaysAgo !== undefined
+          ? { updatedAt: daysAgo(demo.updatedDaysAgo) }
+          : {}),
+        transitions: {
+          create: demo.history.map((step, i) => ({
+            fromStage: i === 0 ? null : demo.history[i - 1].stage,
             toStage: step.stage,
             createdAt: daysAgo(step.daysAgo),
-          },
-        });
-        previousStage = step.stage;
-      }
-    }
-  });
+          })),
+        },
+      },
+    });
+  }
 }
 
 // Seed the sample board into the signed-in user's own account (offered from
@@ -194,12 +191,22 @@ export async function startDemoSession(): Promise<void> {
 
   // Auth.js names the cookie __Secure-authjs.session-token when the request is
   // https and authjs.session-token otherwise (secure derived from url.protocol
-  // in @auth/core). Match that off the forwarded proto so the cookie we set is
-  // the exact one auth() reads back.
-  const isHttps = (await headers()).get("x-forwarded-proto") === "https";
-  const cookieName = `${isHttps ? "__Secure-" : ""}authjs.session-token`;
+  // in @auth/core). The x-forwarded-proto sniff is unreliable inside Server
+  // Actions (absent or a list on some platforms), and a wrong guess means the
+  // session row exists but auth() never sees it — so set both names and let
+  // Auth.js read whichever one it expects. The extra cookie is ignored.
+  const proto = (await headers()).get("x-forwarded-proto") ?? "";
+  const isHttps = proto.split(",").some((p) => p.trim() === "https");
+  const jar = await cookies();
 
-  (await cookies()).set(cookieName, sessionToken, {
+  jar.set("__Secure-authjs.session-token", sessionToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: true,
+    expires,
+  });
+  jar.set("authjs.session-token", sessionToken, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
