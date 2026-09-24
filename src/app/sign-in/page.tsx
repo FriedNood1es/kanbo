@@ -1,6 +1,7 @@
 import { signIn } from "@/lib/auth";
 import { startDemoSession } from "@/actions/demo";
 import Button from "@/components/ui/Button";
+import DemoButton from "./DemoButton";
 import KanboMark from "@/components/ui/KanboMark";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StageTravelPreview from "@/components/ui/StageTravelPreview";
@@ -83,9 +84,7 @@ export default function SignInPage() {
         </div>
 
         <form action={startDemoSession}>
-          <Button type="submit" variant="primary" className="w-full gap-3 py-4 text-lg">
-            Explore a live demo
-          </Button>
+          <DemoButton />
         </form>
         <p className="text-center text-sm text-ink-faint">
           No account needed — loads a sample board you can drag around.
