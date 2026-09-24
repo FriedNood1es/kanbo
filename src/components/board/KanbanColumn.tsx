@@ -22,7 +22,7 @@ function CollapseToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className="label-stamp flex w-fit items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1 text-xs text-ink-dim transition-colors hover:border-accent hover:text-ink"
+      className="label-stamp relative flex w-fit items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1 text-xs text-ink-dim transition-colors after:absolute after:-inset-y-2.5 after:content-[''] hover:border-accent hover:text-ink"
     >
       {label}
       <svg

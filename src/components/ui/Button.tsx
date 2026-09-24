@@ -23,7 +23,7 @@ export default function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-1.5 rounded-md transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${variantClass[variant]} ${sizeClass[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${variantClass[variant]} ${sizeClass[size]} ${className}`}
       {...props}
     />
   );

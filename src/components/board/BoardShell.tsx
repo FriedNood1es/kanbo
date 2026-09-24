@@ -46,13 +46,13 @@ export default function BoardShell({
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 flex items-center gap-5 border-b border-line bg-card px-5 py-3.5 shadow-sm">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-line bg-card px-5 py-3.5 shadow-sm">
         <div className="flex shrink-0 items-center gap-2">
           <KanboMark className="h-8 w-8" />
           <span className="label-stamp text-xl font-semibold text-ink">Kanbo</span>
         </div>
 
-        <div className="relative w-full max-w-md">
+        <div className="relative min-w-44 flex-1 sm:max-w-md">
           <svg
             width="16"
             height="16"
@@ -71,6 +71,7 @@ export default function BoardShell({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search company or role…"
+            aria-label="Search company or role"
             className="w-full rounded-md border border-line bg-ground py-2.5 pl-10 pr-9 text-base text-ink transition-shadow placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
           {query ? (
@@ -79,7 +80,7 @@ export default function BoardShell({
               onClick={() => setQuery("")}
               aria-label="Clear search"
               title="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-ink-faint hover:text-ink"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-ink-faint hover:text-ink after:absolute after:-inset-3 after:content-['']"
             >
               ×
             </button>

@@ -86,7 +86,7 @@ export default function ApplicationCard({
         <div className="flex items-start gap-2">
           <button
             ref={handleRef}
-            className="-ml-1 mt-0.5 flex h-6 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-ink-faint hover:bg-ground hover:text-ink-dim active:cursor-grabbing"
+            className="-ml-1 mt-0.5 flex h-6 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-ink-faint hover:bg-ground hover:text-ink-dim active:cursor-grabbing relative after:absolute after:-inset-2.5 after:content-['']"
             aria-label="Drag to reorder or change stage"
             title="Drag to reorder or change stage"
           >

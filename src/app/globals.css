@@ -10,7 +10,7 @@
   --card: #fffdf8;
   --ink: #2b2622;
   --ink-dim: #756b5f;
-  --ink-faint: #a89e8f;
+  --ink-faint: #6b6154;
   --line: #ddd3c1;
   --accent: #e8623d;
   --accent-ink: #fffdf8;
@@ -31,7 +31,7 @@
     --card: #302921;
     --ink: #f0e9dd;
     --ink-dim: #b3a99b;
-    --ink-faint: #7a7166;
+    --ink-faint: #ada294;
     --line: #453c30;
     --accent: #ff8a67;
     --accent-ink: #2b2622;
@@ -52,7 +52,7 @@
   --card: #302921;
   --ink: #f0e9dd;
   --ink-dim: #b3a99b;
-  --ink-faint: #7a7166;
+  --ink-faint: #ada294;
   --line: #453c30;
   --accent: #ff8a67;
   --accent-ink: #2b2622;
@@ -72,7 +72,7 @@
   --card: #fffdf8;
   --ink: #2b2622;
   --ink-dim: #756b5f;
-  --ink-faint: #a89e8f;
+  --ink-faint: #6b6154;
   --line: #ddd3c1;
   --accent: #e8623d;
   --accent-ink: #fffdf8;
@@ -237,53 +237,53 @@ body {
 @keyframes glow-applied {
   0%, 8% {
     color: var(--stage-applied);
-    filter: drop-shadow(0 0 9px var(--stage-applied));
+
   }
   20%, 88% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
   100% {
     color: var(--stage-applied);
-    filter: drop-shadow(0 0 9px var(--stage-applied));
+
   }
 }
 
 @keyframes glow-interviewing {
   0%, 20% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
   25%, 33% {
     color: var(--stage-interviewing);
-    filter: drop-shadow(0 0 9px var(--stage-interviewing));
+
   }
   45%, 63% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
   75%, 83% {
     color: var(--stage-interviewing);
-    filter: drop-shadow(0 0 9px var(--stage-interviewing));
+
   }
   95%, 100% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
 }
 
 @keyframes glow-offer {
   0%, 45% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
   50%, 58% {
     color: var(--stage-offer);
-    filter: drop-shadow(0 0 9px var(--stage-offer));
+
   }
   70%, 100% {
     color: var(--ink-faint);
-    filter: drop-shadow(0 0 0px transparent);
+
   }
 }
 

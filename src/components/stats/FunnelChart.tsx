@@ -7,9 +7,12 @@ import { applicationStages, stageMeta, type Stage } from "@/lib/stages";
 // here carries its stage name and count as real text, never color alone.
 export default function FunnelChart({ counts }: { counts: Record<Stage, number> }) {
   const max = Math.max(1, ...applicationStages.map((s) => counts[s] ?? 0));
+  const summary = applicationStages
+    .map((s) => `${counts[s] ?? 0} ${stageMeta[s].label.toLowerCase()}`)
+    .join(", ");
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" role="img" aria-label={`Funnel: ${summary}`}>
       {applicationStages.map((stage) => {
         const meta = stageMeta[stage];
         const count = counts[stage] ?? 0;

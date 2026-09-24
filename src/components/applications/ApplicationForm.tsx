@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { cloneElement, isValidElement, useId, useRef, useState, useTransition } from "react";
 import type { Application } from "@/generated/prisma";
 import { createApplication, updateApplicationDetails } from "@/actions/applications";
 import Button from "@/components/ui/Button";
@@ -56,6 +56,10 @@ export default function ApplicationForm({
     setError(null);
   }
 
+  function openDialog() {
+    dialogRef.current?.showModal();
+  }
+
   function handleSubmit(formData: FormData) {
     const input = {
       company: String(formData.get("company") ?? ""),
@@ -80,9 +84,21 @@ export default function ApplicationForm({
     });
   }
 
+  // Every caller passes a real <button> trigger, so attach the open
+  // handler to it directly — a wrapping <span onClick> would add a
+  // redundant clickable ancestor to the accessibility tree.
+  const opener = isValidElement(trigger) ? (
+    // eslint-disable-next-line react-hooks/refs -- cloneElement receives only an onClick handler here, no ref; the dialog ref is read inside that handler on click, never during render.
+    cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, {
+      onClick: openDialog,
+    })
+  ) : (
+    <span onClick={openDialog}>{trigger}</span>
+  );
+
   return (
     <>
-      <span onClick={() => dialogRef.current?.showModal()}>{trigger}</span>
+      {opener}
       <dialog
         ref={dialogRef}
         className="fixed inset-auto left-1/2 top-1/2 m-0 max-h-[90dvh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-line bg-card p-0 text-ink backdrop:bg-ink/30"
@@ -130,20 +146,6 @@ export default function ApplicationForm({
               list={roles.length > 0 ? roleListId : undefined}
               className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
             />
-          </label>
-
-          <label className={labelClass}>
-            Job URL
-            <input
-              name="jobUrl"
-              type="text"
-              placeholder="facebook.com/jobs/…"
-              defaultValue={application?.jobUrl ?? ""}
-              className={`${fieldClass} font-sans text-[0.95rem] normal-case tracking-normal`}
-            />
-            <p className={hintClass}>
-              We&rsquo;ll try to show the company&rsquo;s logo automatically from this.
-            </p>
           </label>
 
           {companies.length > 0 && (

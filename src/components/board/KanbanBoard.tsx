@@ -405,7 +405,7 @@ export default function KanbanBoard({
                   type="button"
                   onClick={dismissDragHint}
                   aria-label="Dismiss tip"
-                  className="ml-auto shrink-0 text-lg leading-none text-ink-faint hover:text-ink"
+                  className="relative ml-auto shrink-0 text-lg leading-none text-ink-faint hover:text-ink after:absolute after:-inset-3 after:content-['']"
                 >
                   ×
                 </button>
