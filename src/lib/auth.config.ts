@@ -9,7 +9,17 @@ import Google from "next-auth/providers/google";
 // multi-tenant products with untrusted sign-ups, not sign-in methods for a
 // single known user.
 export const authConfig = {
-  providers: [GitHub, Google({ allowDangerousEmailAccountLinking: true })],
+  providers: [
+    GitHub,
+    Google({
+      allowDangerousEmailAccountLinking: true,
+      // Force Google's account chooser on every sign-in. Without this,
+      // Google's surviving SSO cookie silently reuses the last account, so
+      // signing out of Kanbo never actually offers a different one.
+      // ("consent" would also work but re-asks scopes each time — noisier.)
+      authorization: { params: { prompt: "select_account" } },
+    }),
+  ],
   pages: {
     signIn: "/sign-in",
   },
