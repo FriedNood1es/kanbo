@@ -9,6 +9,14 @@ const shortcuts = [
   { keys: "?", description: "Show this help" },
 ];
 
+// Plain-language decoder for the card badges — the badges themselves stay
+// terse (and keep their emoji accents), this is where newcomers learn them.
+const badgeLegend = [
+  { mark: "🚩", description: "Follow-up needs attention — date passed or due" },
+  { mark: "👻", description: "Possibly ghosted — no reply for a while" },
+  { mark: "●", description: "Stale — no updates for a while" },
+];
+
 export default function ShortcutsHelp() {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -30,8 +38,8 @@ export default function ShortcutsHelp() {
       <button
         type="button"
         onClick={() => dialogRef.current?.showModal()}
-        aria-label="Keyboard shortcuts"
-        title="Keyboard shortcuts"
+        aria-label="Help"
+        title="Help"
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-sm font-semibold text-ink-dim transition-colors hover:border-accent hover:text-ink"
       >
         ?
@@ -42,7 +50,7 @@ export default function ShortcutsHelp() {
         className="w-full max-w-xs rounded-lg border border-line bg-card p-0 text-ink backdrop:bg-ink/30"
       >
         <div className="flex flex-col gap-4 p-5">
-          <h2 className="text-lg font-semibold text-ink">Keyboard shortcuts</h2>
+          <h2 className="text-lg font-semibold text-ink">Help</h2>
 
           <ul className="flex flex-col gap-2.5">
             {shortcuts.map((s) => (
@@ -51,6 +59,19 @@ export default function ShortcutsHelp() {
                 <kbd className="label-stamp rounded border border-line bg-ground px-1.5 py-0.5 text-xs text-ink">
                   {s.keys}
                 </kbd>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="label-stamp -mb-2 text-xs text-ink-dim">Card badges</h3>
+
+          <ul className="flex flex-col gap-2">
+            {badgeLegend.map((b) => (
+              <li key={b.mark} className="flex items-center gap-3 text-sm">
+                <span aria-hidden className="w-5 shrink-0 text-center">
+                  {b.mark}
+                </span>
+                <span className="text-ink-dim">{b.description}</span>
               </li>
             ))}
           </ul>

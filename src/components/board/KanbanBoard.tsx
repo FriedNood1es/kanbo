@@ -12,7 +12,11 @@ import KanbanColumn from "@/components/board/KanbanColumn";
 import BoardStats from "@/components/board/BoardStats";
 import ApplicationForm from "@/components/applications/ApplicationForm";
 import { moveApplication } from "@/actions/board";
-import { deleteApplication } from "@/actions/applications";
+import {
+  deleteApplication,
+  restoreApplication,
+  type ApplicationSnapshot,
+} from "@/actions/applications";
 import { seedDemoApplications } from "@/actions/demo";
 import { stageMeta, type Stage } from "@/lib/stages";
 import { getAttentionBadge } from "@/lib/staleness";
@@ -20,7 +24,8 @@ import Button from "@/components/ui/Button";
 import Toast from "@/components/ui/Toast";
 import KanboMark from "@/components/ui/KanboMark";
 
-const MOVE_ERROR_MS = 4000;
+const MOVE_ERROR_MS = 8000;
+const UNDO_MS = 7000;
 // Remembered per demo session so the nudge stays gone after the first drag,
 // even across a refresh, without following the visitor out of demo mode.
 const DRAG_HINT_KEY = "kanbo-demo-drag-hint-done";
@@ -169,7 +174,6 @@ export default function KanbanBoard({
       // the effect below, so a discarded/replayed render at worst computes
       // one extra id as "new" — it can't corrupt state, only skip an
       // entrance animation that would otherwise have played.
-      // eslint-disable-next-line react-hooks/refs
       if (!knownCardIds.current.has(a.id)) ids.add(a.id);
     }
     return ids;
@@ -184,17 +188,92 @@ export default function KanbanBoard({
     });
   }
 
-  const [moveError, setMoveError] = useState<string | null>(null);
-  const moveErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  type BoardToast = { message: string; actionLabel?: string; onAction?: () => void };
+
+  const [toast, setToast] = useState<BoardToast | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function dismissToast() {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = null;
+    setToast(null);
+  }
+
+  // One toast slot for every transient board notice (move failures with
+  // retry, delete with undo): showing a new one replaces the old, so two
+  // errors can never stack or strand each other's timers.
+  function showToast(next: BoardToast, ms = MOVE_ERROR_MS) {
+    dismissToast();
+    setToast(next);
+    toastTimer.current = setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, ms);
+  }
+
+  // Last failed drop for the toast's Retry — rollback already restored the
+  // snapshot, so retry just re-issues the same persist.
+  const failedMove = useRef<{ id: string; stage: Stage; position: number } | null>(null);
+
+  async function retryMove() {
+    const move = failedMove.current;
+    if (!move) return;
+    const result = await moveApplication(move);
+    if (result.success) {
+      failedMove.current = null;
+      dismissToast();
+      return;
+    }
+    showToast({
+      message: `Couldn't save that move: ${result.error}`,
+      actionLabel: "Retry",
+      onAction: retryMove,
+    });
+  }
+
+  // Undo payload for the delete toast — ref, not state: only the handler
+  // needs it, nothing renders from it.
+  const deleteUndo = useRef<{ application: Application; snapshot: ApplicationSnapshot } | null>(
+    null,
+  );
+
+  async function undoDelete() {
+    const undone = deleteUndo.current;
+    deleteUndo.current = null;
+    dismissToast();
+    if (!undone) return;
+    // Optimistic re-insert under the old id; the server restore mints a new
+    // id, and the resync below converges on the refetch (lengths match but
+    // no row matches by id, so the fresh array wins).
+    setApplications((prev) => [...prev, undone.application]);
+    const result = await restoreApplication(undone.snapshot);
+    if (!result.success) {
+      setApplications((prev) => prev.filter((a) => a.id !== undone.application.id));
+      showToast({ message: `Couldn't restore: ${result.error}` });
+    }
+  }
 
   // Deletion is confirmed inline on the card itself (see ApplicationCard), so
   // by the time this runs the user has already committed — drop the row from
-  // local state immediately and persist. Removing it locally (rather than
-  // waiting on the server round-trip's revalidation) keeps the card from
-  // lingering until the refetch lands.
-  function requestDelete(application: Application) {
-    deleteApplication(application.id);
+  // local state immediately and persist, but keep the snapshot on hand so
+  // the toast's Undo can rebuild it bit-for-bit (same position, same stage
+  // history) within a few seconds.
+  async function requestDelete(application: Application) {
+    const result = await deleteApplication(application.id);
+    if (!result.success) {
+      showToast({ message: `Couldn't delete ${application.company}: ${result.error}` });
+      return;
+    }
+    deleteUndo.current = { application, snapshot: result.snapshot };
     setApplications((prev) => prev.filter((a) => a.id !== application.id));
+    showToast(
+      {
+        message: `Deleted ${application.company}`,
+        actionLabel: "Undo",
+        onAction: undoDelete,
+      },
+      UNDO_MS,
+    );
   }
 
   function matchesQuery(application: Application) {
@@ -341,12 +420,16 @@ export default function KanbanBoard({
     }).then((result) => {
       if (result.success) return;
       if (snapshot) setApplications(snapshot);
-      if (moveErrorTimer.current) clearTimeout(moveErrorTimer.current);
-      setMoveError(`Couldn't save that move: ${result.error}`);
-      moveErrorTimer.current = setTimeout(() => {
-        setMoveError(null);
-        moveErrorTimer.current = null;
-      }, MOVE_ERROR_MS);
+      failedMove.current = {
+        id: activeId,
+        stage: placement.newStage,
+        position: placement.newPosition,
+      };
+      showToast({
+        message: `Couldn't save that move: ${result.error}`,
+        actionLabel: "Retry",
+        onAction: retryMove,
+      });
     });
   }
 
@@ -441,11 +524,33 @@ export default function KanbanBoard({
                 />
               ))}
             </div>
+
+            {/* Thumb-zone add on small screens: the stats-row button is a
+                long reach one-handed, so a floating action duplicates it
+                below sm. No data-tour anchor — the stats-row button already
+                owns it and the tour expects exactly one. */}
+            <div className="fixed bottom-5 right-5 z-20 sm:hidden">
+              <ApplicationForm
+                companies={allCompanies}
+                roles={allRoles}
+                trigger={
+                  <Button
+                    type="button"
+                    aria-label="Add application"
+                    className="h-14 w-14 rounded-full text-2xl shadow-lg"
+                  >
+                    +
+                  </Button>
+                }
+              />
+            </div>
           </>
         )}
       </div>
 
-      {moveError && <Toast message={moveError} />}
+      {toast && (
+        <Toast message={toast.message} actionLabel={toast.actionLabel} onAction={toast.onAction} />
+      )}
 
       {/* Floating clone that follows the pointer while the source card stays
           behind as a dimmed placeholder — the lift Trello has and an in-place

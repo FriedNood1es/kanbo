@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { SortableKeyboardPlugin } from "@dnd-kit/dom/sortable";
 import type { Application } from "@/generated/prisma";
@@ -64,8 +64,39 @@ export default function ApplicationCard({
   // its age as a rubber stamp. The stamp states a fact, so it shows anywhere
   // the card renders (column, search results).
   const isOlder = olderDaysAgo !== undefined;
+  const badgeTitle = !badge
+    ? undefined
+    : badge.kind === "overdue"
+      ? "Follow-up date has passed"
+      : badge.kind === "upcoming"
+        ? "Follow-up scheduled"
+        : badge.kind === "ghosted"
+          ? "No reply for a while — possibly ghosted"
+          : "No updates for a while";
   const [isShredding, setIsShredding] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Same contract as AccountMenu's dropdown: outside click or Escape closes.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpen]);
 
   function handleConfirmDelete() {
     setIsConfirmingDelete(false);
@@ -86,9 +117,9 @@ export default function ApplicationCard({
         <div className="flex items-start gap-2">
           <button
             ref={handleRef}
-            className="-ml-1 mt-0.5 flex h-6 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-ink-faint hover:bg-ground hover:text-ink-dim active:cursor-grabbing relative after:absolute after:-inset-2.5 after:content-['']"
-            aria-label="Drag to reorder or change stage"
-            title="Drag to reorder or change stage"
+            className="-ml-1 mt-0.5 flex h-8 w-8 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-ink-faint hover:bg-ground hover:text-ink-dim active:cursor-grabbing relative after:absolute after:-inset-2 after:content-['']"
+            aria-label="Drag to reorder or change stage (also keyboard-draggable)"
+            title="Drag to reorder or change stage (also keyboard-draggable)"
           >
             <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
               <circle cx="3" cy="2" r="1.5" />
@@ -122,6 +153,7 @@ export default function ApplicationCard({
 
         {badge && (
           <p
+            title={badgeTitle}
             className={`label-stamp flex items-center gap-1.5 text-xs ${
               isGhosted
                 ? "font-semibold text-ghost"
@@ -147,12 +179,27 @@ export default function ApplicationCard({
         )}
 
         {application.notes && (
-          <div
-            data-no-drag
-            className="max-h-28 overflow-y-auto rounded-md bg-ground px-2 py-1.5 text-sm text-ink-dim"
-          >
-            <NoteContent text={application.notes} />
-          </div>
+          <>
+            <div
+              data-no-drag
+              className={`rounded-md bg-ground px-2 py-1.5 text-sm text-ink-dim ${
+                notesExpanded ? "max-h-28 overflow-y-auto" : ""
+              }`}
+            >
+              <div className={notesExpanded ? undefined : "line-clamp-2"}>
+                <NoteContent text={application.notes} />
+              </div>
+            </div>
+            {application.notes.length > 140 && (
+              <button
+                type="button"
+                onClick={() => setNotesExpanded((v) => !v)}
+                className="-mt-1 self-start text-xs font-semibold text-accent hover:underline"
+              >
+                {notesExpanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </>
         )}
 
         {isConfirmingDelete ? (
@@ -171,20 +218,54 @@ export default function ApplicationCard({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-end gap-2">
-            <ApplicationForm
-              application={application}
-              companies={companies}
-              roles={roles}
-              trigger={
-                <Button type="button" variant="ghost" size="sm">
-                  Edit
-                </Button>
-              }
-            />
-            <Button variant="danger" size="sm" onClick={() => setIsConfirmingDelete(true)}>
-              Delete
-            </Button>
+          <div className="flex items-center justify-end">
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Card actions"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                title="Card actions"
+                className="relative flex h-8 w-8 items-center justify-center rounded text-lg leading-none text-ink-faint hover:bg-ground hover:text-ink after:absolute after:-inset-2 after:content-['']"
+              >
+                ⋯
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute bottom-full right-0 z-20 mb-1 w-36 overflow-hidden rounded-md border border-line bg-card shadow-lg"
+                >
+                  <div onClick={() => setMenuOpen(false)}>
+                    <ApplicationForm
+                      application={application}
+                      companies={companies}
+                      roles={roles}
+                      trigger={
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-ground"
+                        >
+                          Edit
+                        </button>
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setIsConfirmingDelete(true);
+                    }}
+                    className="block w-full px-3 py-2 text-left text-sm text-stage-rejected hover:bg-ground"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
